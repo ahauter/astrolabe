@@ -1,0 +1,10 @@
+2024/04/18 13:36:49 Starting lsp server
+2024/04/18 13:36:38 Initialized Server
+2024/04/18 13:36:44 Received Command
+2024/04/18 13:36:44 create_comment
+2024/04/18 13:36:44 [map[lines:func CommandHandler(context *glsp.Context, params *protocol.ExecuteCommandParams) (any, error) {
+	log.Println("Received Command")
+	log.Println(params.Command)
+	log.Println(params.Arguments)
+	return "", nil
+}]]
