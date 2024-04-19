@@ -95,6 +95,23 @@ function M.AllowSaving()
     "n", "x",
     ":<C-u>call v:lua.InsertComment()<CR>",
     { silent = true })
+  vim.api.nvim_buf_set_keymap(foreground_buffer,
+    "n", "x",
+    ":<C-u>call v:lua.InsertComment()<CR>",
+    { silent = true })
+end
+
+function M.GetCommentLines()
+  if foreground_buffer == nil then
+    return {}
+  end
+  comment_lines = vim.api.nvim_buf_get_lines(
+    foreground_buffer,
+    0,
+    vim.api.nvim_buf_line_count(foreground_buffer) - 1,
+    false
+  )
+  return comment_lines
 end
 
 function M.DisableSaving()
