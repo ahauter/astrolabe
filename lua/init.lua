@@ -69,7 +69,15 @@ function CreateComment()
   -- or use api.nvim_buf_get_lines
   local lines = get_visual_selection()
   commentWindow.MakePopup()
-  commentWindow.SetBuffer({ "#############", "Loading", "#############" })
+  commentWindow.AddInstructions({
+    "q Quit",
+    "x Add comment to buffer"
+  })
+  commentWindow.SetBuffer({
+    "################################################################################",
+    "################################### LOADING ###################################",
+    "################################################################################"
+  })
   resp = client.request("workspace/executeCommand", {
       command = "create_comment", arguments = { lines }
     },
