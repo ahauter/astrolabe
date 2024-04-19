@@ -1,7 +1,7 @@
-popup = require('plenary.popup')
+commentWindow = require("lua.comment_edit_window")
+
 local id = nil
 local cur_buffer = nil
-
 
 local function attach_lsp(args)
   if id == nil then
@@ -49,22 +49,6 @@ function Restart_LSP()
   start_lsp()
 end
 
-function MakePopup(bufnr)
-  local width = 80
-  local height = 20
-  local borderchars = { "─", "│", "─", "│", "╭", "╮", "╯", "╰" }
-  local win_id, win = popup.create(bufnr, {
-    title = "Astrolabe",
-    highlight = "Astrolabe",
-    line = math.floor(((vim.o.lines - height) / 2) - 1),
-    col = math.floor((vim.o.columns - width) / 2),
-    minwidth = width,
-    minheight = height,
-    borderchars = borderchars,
-  })
-  return win_id
-end
-
 local function get_visual_selection()
   local s_start = vim.fn.getpos("'<")
   local s_end = vim.fn.getpos("'>")
@@ -79,38 +63,28 @@ local function get_visual_selection()
   return table.concat(lines, '\n')
 end
 
-function InsertComment(bufnr, line, comment_lines)
-  vim.api.nvim_buf_set_lines(bufnr, line, line, false, comment_lines)
-end
-
-function CloseWindow(w_id)
-  vim.api.nvim_win_close(w_id, true)
-end
 
 function CreateComment()
   client = vim.lsp.get_client_by_id(id)
-  cur_bufner = vim.api.nvim_win_get_buf(0)
   -- or use api.nvim_buf_get_lines
-  local s_start = vim.fn.getpos("'<")
   local lines = get_visual_selection()
-  local buf = vim.api.nvim_create_buf(true, true)
-  win_id = MakePopup(buf)
-  vim.api.nvim_buf_set_lines(buf, 0, 0, false, { "#############", "Loading", "#############" })
+  commentWindow.MakePopup()
+  commentWindow.SetBuffer({ "#############", "Loading", "#############" })
   resp = client.request("workspace/executeCommand", {
       command = "create_comment", arguments = { lines }
     },
     function(err, result, ctx, config)
       if err ~= nil then
         print("Error generating comment: " .. err)
-        vim.api.nvim_buf_set_lines(buf, 0, 3, false, { "#############", "Error", "#############" })
+        commentWindow.SetBuffer({ "#############", "Error", "#############" })
         return
       end
       comment = {}
       for line in result:gmatch("([^\n]*)\n?") do
-        print(line)
         table.insert(comment, line)
       end
-      vim.api.nvim_buf_set_lines(buf, 0, 3, false, comment)
+      commentWindow.SetBuffer(comment)
+      commentWindow.AllowSaving()
     end)
 end
 
