@@ -67,7 +67,7 @@ func RespToStr(resp *genai.GenerateContentResponse) string {
 }
 
 func FilterComments(code string) string {
-	commentStyles := []string{"//", "#"}
+	commentStyles := []string{"//", "#", "--"}
 	//TODO multiline comments
 	lines := []string{}
 	for _, line := range strings.Split(code, "\n") {
