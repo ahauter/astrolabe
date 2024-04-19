@@ -96,7 +96,23 @@ function CreateComment()
     end)
 end
 
-vim.keymap.set('v', '<leader>c', ":<C-u>call v:lua.CreateComment()<CR>")
+function CreateTests()
+  comment = CommentWindow.GetCommentLines()
+  resp = client.request("workspace/executeCommand", {
+      command = "create_tests", arguments = { comment }
+    },
+    function(err, result, ctx, config)
+      if err ~= nil then
+        print("Error generating tests: " .. err)
+        return
+      end
+      comment = {}
+      for line in result:gmatch("([^\n]*)\n?") do
+        table.insert(comment, line)
+      end
+    end)
+end
 
+vim.keymap.set('v', '<leader>c', ":<C-u>call v:lua.CreateComment()<CR>")
 
 start_lsp()
