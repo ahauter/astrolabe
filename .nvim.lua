@@ -1,3 +1,4 @@
+popup = require('plenary.popup')
 local id = nil
 local cur_buffer = nil
 
@@ -48,6 +49,22 @@ function Restart_LSP()
   start_lsp()
 end
 
+function MakePopup(bufnr)
+  local width = 80
+  local height = 20
+  local borderchars = { "─", "│", "─", "│", "╭", "╮", "╯", "╰" }
+  local win_id, win = popup.create(bufnr, {
+    title = "Astrolabe",
+    highlight = "Astrolabe",
+    line = math.floor(((vim.o.lines - height) / 2) - 1),
+    col = math.floor((vim.o.columns - width) / 2),
+    minwidth = width,
+    minheight = height,
+    borderchars = borderchars,
+  })
+  return win_id
+end
+
 local function get_visual_selection()
   local s_start = vim.fn.getpos("'<")
   local s_end = vim.fn.getpos("'>")
@@ -62,24 +79,48 @@ local function get_visual_selection()
   return table.concat(lines, '\n')
 end
 
-function Create_Comment()
-  client = vim.lsp.get_client_by_id(id)
-  local vstart = vim.fn.getpos("'<")
-
-  local vend = vim.fn.getpos("'>")
-
-  local line_start = vstart[2]
-  local line_end = vend[2]
-
-  -- or use api.nvim_buf_get_lines
-  local lines = get_visual_selection()
-  print("Got Lines")
-  client.request("workspace/executeCommand", {
-    command = "create_comment", arguments = { { lines = lines }, }
-  })
+function InsertComment(bufnr, line, comment_lines)
+  vim.api.nvim_buf_set_lines(bufnr, line, line, false, comment_lines)
 end
 
-vim.keymap.set('v', '<leader>c', ":<C-u>call v:lua.Create_Comment()<CR>")
+function CloseWindow(w_id)
+  vim.api.nvim_win_close(w_id, true)
+end
+
+function CreateComment()
+  client = vim.lsp.get_client_by_id(id)
+  cur_bufner = vim.api.nvim_win_get_buf(0)
+  -- or use api.nvim_buf_get_lines
+  local s_start = vim.fn.getpos("'<")
+  local lines = get_visual_selection()
+  local buf = vim.api.nvim_create_buf(true, true)
+  win_id = MakePopup(buf)
+  vim.api.nvim_buf_set_lines(buf, 0, 0, false, { "#############", "Loading", "#############" })
+  resp = client.request("workspace/executeCommand", {
+      command = "create_comment", arguments = { lines }
+    },
+    function(err, result, ctx, config)
+      if err ~= nil then
+        print("Error generating comment: " .. err)
+        vim.api.nvim_buf_set_lines(buf, 0, 3, false, { "#############", "Error", "#############" })
+        return
+      end
+      comment = {}
+      for line in result:gmatch("([^\n]*)\n?") do
+        print(line)
+        table.insert(comment, line)
+      end
+      vim.api.nvim_buf_set_lines(buf, 0, 3, false, comment)
+      vim.api.nvim_buf_set_keymap(
+        buf, "n", "x",
+        ":<C-u>call v:lua.InsertComment(" .. cur_bufner .. "," .. s_start .. "," .. vim.api.nvim_buf_get_lines("0, 0," .. vim.api.nvim_buf_line_count() .. ", false))",
+        { silent = true }
+      )
+      vim.api.nvim_buf_set_keymap(buf, "n", "q", ":<C-u>call v:lua.CloseWindow(".. w_id ..")", { silent = true })
+    end)
+end
+
+vim.keymap.set('v', '<leader>c', ":<C-u>call v:lua.CreateComment()<CR>")
 
 
 start_lsp()

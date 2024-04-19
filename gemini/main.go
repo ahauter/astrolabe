@@ -8,30 +8,18 @@ import (
 
 	"context"
 
-	"github.com/google/generative-ai-go/genai"
+	genai "github.com/google/generative-ai-go/genai"
 	dotEnv "github.com/joho/godotenv"
 	"google.golang.org/api/option"
 )
 
 func main() {
 	fmt.Println("Hello world")
-	err := dotEnv.Load(".env")
+	model, err := NewGenerationModel()
 	if err != nil {
-		fmt.Println("Failed to load env file")
+		log.Fatalf(err.Error())
 	}
-	api_key := os.Getenv("API_KEY")
-	ctx := context.Background()
-	client, err := genai.NewClient(ctx, option.WithAPIKey(api_key))
-	if err != nil {
-		log.Fatalf("Could not create genia client")
-	}
-	defer client.Close()
-	model := client.GenerativeModel("gemini-pro")
-	if err != nil {
-		log.Fatal(err)
-	}
-	comment, err := CreateComment(
-		ctx, *model,
+	comment, err := model.CreateComment(
 		` 
 func FilterComments(code string) string {
 	commentStyles := []string{"//", "#"}
@@ -51,7 +39,27 @@ func FilterComments(code string) string {
     `,
 	)
 
-	fmt.Println(CreateTests(ctx, *model, comment))
+	fmt.Println(model.CreateTests(comment))
+}
+
+type GenerationModel struct {
+	context context.Context
+	model   *genai.GenerativeModel
+}
+
+func NewGenerationModel() (*GenerationModel, error) {
+	err := dotEnv.Load(".env")
+	if err != nil {
+		return nil, err
+	}
+	api_key := os.Getenv("API_KEY")
+	ctx := context.Background()
+	client, err := genai.NewClient(ctx, option.WithAPIKey(api_key))
+	if err != nil {
+		return nil, err
+	}
+	model := client.GenerativeModel("gemini-pro")
+	return &GenerationModel{context: ctx, model: model}, nil
 }
 
 func RespToStr(resp *genai.GenerateContentResponse) string {
@@ -73,13 +81,13 @@ func FilterComments(code string) string {
 	return strings.Join(lines, "\n")
 }
 
-func CreateTests(ctx context.Context, model genai.GenerativeModel, code string) (string, error) {
+func (m *GenerationModel) CreateTests(code string) (string, error) {
 	prompt := fmt.Sprintf(
-		"Write unit tests in golang for the function with this header comment",
+		"Write unit tests in golang for the function with this header comment %s",
 		code,
 	)
-	resp, err := model.GenerateContent(
-		ctx,
+	resp, err := m.model.GenerateContent(
+		m.context,
 		genai.Text(prompt),
 	)
 	if err != nil {
@@ -88,13 +96,13 @@ func CreateTests(ctx context.Context, model genai.GenerativeModel, code string) 
 	return RespToStr(resp), nil
 }
 
-func CreateComment(ctx context.Context, model genai.GenerativeModel, code string) (string, error) {
+func (m *GenerationModel) CreateComment(code string) (string, error) {
 	prompt := fmt.Sprintf(
 		"Write a comment for the following code, include details about parameters, return, and possible errors.\n Only write the function header comment, do not write any code.\n %s",
 		code,
 	)
-	resp, err := model.GenerateContent(
-		ctx,
+	resp, err := m.model.GenerateContent(
+		m.context,
 		genai.Text(prompt),
 	)
 	if err != nil {

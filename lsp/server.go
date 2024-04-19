@@ -2,8 +2,8 @@ package main
 
 import (
 	"log"
-	"os"
 
+	gemini "gemini/gemini"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
@@ -21,22 +21,26 @@ var (
 	handler protocol.Handler
 )
 
-func CommandHandler(context *glsp.Context, params *protocol.ExecuteCommandParams) (any, error) {
-	log.Println("Received Command")
-	log.Println(params.Command)
-	log.Println(params.Arguments)
-	return "", nil
+func MakeCommandHandler(model *gemini.GenerationModel) protocol.WorkspaceExecuteCommandFunc {
+	return func(context *glsp.Context, params *protocol.ExecuteCommandParams) (any, error) {
+		log.Println("Received Command")
+		log.Println(params.Command)
+		log.Println(params.Arguments)
+		code := params.Arguments[len(params.Arguments)-1].(string)
+		comment, err := model.CreateComment(code)
+		return comment, err
+	}
 }
 
 func main() {
 	// This increases logging verbosity (optional)
 	commonlog.Configure(1, nil)
 
-	log_file, err := os.OpenFile("./dbg/logs.txt", os.O_RDWR|os.O_CREATE, 0666)
+	model, err := gemini.NewGenerationModel()
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-	log.SetOutput(log_file)
+	CommandHandler := MakeCommandHandler(model)
 	log.Println("Starting lsp server")
 	handler = protocol.Handler{
 		Initialize:              initialize,
