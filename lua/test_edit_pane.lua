@@ -21,6 +21,7 @@ function M.AddInstructions(lines)
   vim.api.nvim_buf_set_lines(instruction_buffer, 0, num_lines + 1, false, lines)
 end
 
+--TODO Maybe add a vertical split in buffer
 function M.MakePopup()
   if test_edit_buffer ~= nil then
     return
@@ -31,7 +32,7 @@ function M.MakePopup()
   end
   --TODO logic for comments under function header
   insert_line = vim.fn.getpos("'<")[2] - 1
-  local width = 120
+  local width = 100
   local height = 40
   local borderchars = { "─", "│", "─", "│", "╭", "╮", "╯", "╰" }
   local second_wind_id, win = popup.create(instruction_buffer, {

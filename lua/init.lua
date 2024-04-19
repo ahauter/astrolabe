@@ -1,4 +1,5 @@
 commentWindow = require("lua.comment_edit_window")
+testWindow = require("lua.test_edit_pane")
 
 local id = nil
 local cur_buffer = nil
@@ -97,19 +98,33 @@ function CreateComment()
 end
 
 function CreateTests()
-  comment = CommentWindow.GetCommentLines()
+  comment = commentWindow.GetCommentLines()
+  comment = table.concat(comment, '\n')
+  InsertComment()
+  testWindow.MakePopup()
+  testWindow.SetBuffer({
+    "################################################################################",
+    "################################### LOADING ###################################",
+    "################################################################################"
+  })
   resp = client.request("workspace/executeCommand", {
       command = "create_tests", arguments = { comment }
     },
     function(err, result, ctx, config)
       if err ~= nil then
+        testWindow.SetBuffer({
+          "################################################################################",
+          "###################################  ERROR  ####################################",
+          "################################################################################"
+        })
         print("Error generating tests: " .. err)
         return
       end
-      comment = {}
+      tests_output = {}
       for line in result:gmatch("([^\n]*)\n?") do
-        table.insert(comment, line)
+        table.insert(tests_output, line)
       end
+      testWindow.SetBuffer(tests_output)
     end)
 end
 

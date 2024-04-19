@@ -96,8 +96,8 @@ function M.AllowSaving()
     ":<C-u>call v:lua.InsertComment()<CR>",
     { silent = true })
   vim.api.nvim_buf_set_keymap(foreground_buffer,
-    "n", "x",
-    ":<C-u>call v:lua.InsertComment()<CR>",
+    "n", "t",
+    ":<C-u>call v:lua.CreateTests()<CR>",
     { silent = true })
 end
 

@@ -24,6 +24,8 @@ var (
 	handler protocol.Handler
 )
 
+// MakeCommandHandler constructs a function that can be used with the workspace service
+// to handle command executions for the language server.
 func MakeCommandHandler(model *gemini.GenerationModel) protocol.WorkspaceExecuteCommandFunc {
 	return func(context *glsp.Context, params *protocol.ExecuteCommandParams) (any, error) {
 		log.Println("Received Command")
@@ -37,7 +39,7 @@ func MakeCommandHandler(model *gemini.GenerationModel) protocol.WorkspaceExecute
 			return comment, err
 		case "create_tests":
 			comment := params.Arguments[len(params.Arguments)-1].(string)
-			tests, err := model.CreateComment(comment)
+			tests, err := model.CreateTests(comment)
 			return tests, err
 		case "clear_diagnostics":
 			clear_diagnostics := protocol.PublishDiagnosticsParams{
@@ -85,6 +87,8 @@ func main() {
 	log.Println("Starting lsp server")
 }
 
+// initialize initializes the server based on the given context.
+// ...
 func initialize(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
 	capabilities := handler.CreateServerCapabilities()
 	return protocol.InitializeResult{
