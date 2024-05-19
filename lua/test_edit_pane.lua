@@ -11,6 +11,9 @@ function M.SetBuffer(lines)
   vim.api.nvim_buf_set_lines(test_edit_buffer, 0, num_lines + 1, false, lines)
 end
 
+function M.SetBufferName(name)
+end
+
 --TODO Maybe add a vertical split in buffer
 function M.MakePopup()
   if test_edit_buffer ~= nil then

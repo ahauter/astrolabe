@@ -72,7 +72,9 @@ function CreateComment()
   commentWindow.MakePopup()
   commentWindow.AddInstructions({
     "q Quit",
-    "x Add comment to buffer"
+    "x Add comment to buffer",
+    "r Regenerate comments",
+    "t Write tests given comments"
   })
   commentWindow.SetBuffer({
     "################################################################################",
@@ -100,6 +102,7 @@ end
 function CreateTests()
   comment = commentWindow.GetCommentLines()
   comment = table.concat(comment, '\n')
+  file_name = vim.api.nvim_buf_get_name(commentWindow.file_buffer)
   InsertComment()
   testWindow.MakePopup()
   testWindow.SetBuffer({
@@ -108,7 +111,7 @@ function CreateTests()
     "################################################################################"
   })
   resp = client.request("workspace/executeCommand", {
-      command = "create_tests", arguments = { comment }
+      command = "create_tests", arguments = { comment, file_name }
     },
     function(err, result, ctx, config)
       if err ~= nil then
@@ -121,7 +124,12 @@ function CreateTests()
         return
       end
       tests_output = {}
+      test_file_path = ""
       for line in result:gmatch("([^\n]*)\n?") do
+        start_ind, end_ind = string.find(line, "__astro_test_file_path__=")
+        if start_ind ~= nil and start_ind >= 0 then
+          print(line)
+        end
         table.insert(tests_output, line)
       end
       testWindow.SetBuffer(tests_output)

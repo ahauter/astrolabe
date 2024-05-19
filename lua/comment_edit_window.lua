@@ -1,11 +1,12 @@
 popup = require('plenary.popup')
 insert_line = nil
-background_buffer = nil
 foreground_buffer = nil
 instruction_buffer = nil
 window_id = nil
 second_window_id = nil
 local M = {}
+
+M.file_buffer = nil
 
 function M.SetBuffer(lines)
   if foreground_buffer == nil then
@@ -30,7 +31,7 @@ function InsertComment()
     vim.api.nvim_buf_line_count(foreground_buffer) - 1,
     false
   )
-  vim.api.nvim_buf_set_lines(background_buffer, insert_line, insert_line, false, comment_lines)
+  vim.api.nvim_buf_set_lines(M.file_buffer, insert_line, insert_line, false, comment_lines)
   CloseWindow()
 end
 
@@ -42,14 +43,15 @@ function CloseWindow()
   vim.api.nvim_win_close(second_window_id, true)
   window_id = nil
   foreground_buffer = nil
-  background_buffer = nil
+  M.file_buffer = nil
 end
 
 function M.MakePopup()
   if foreground_buffer ~= nil then
     return
   end
-  background_buffer = vim.api.nvim_win_get_buf(0)
+  M.file_buffer = vim.api.nvim_win_get_buf(0)
+  print(M.file_buffer)
   foreground_buffer = vim.api.nvim_create_buf(true, true)
   if instruction_buffer == nil then
     instruction_buffer = vim.api.nvim_create_buf(true, true)
