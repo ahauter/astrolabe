@@ -104,7 +104,7 @@ function CreateTests()
   comment = table.concat(comment, '\n')
   file_name = vim.api.nvim_buf_get_name(commentWindow.file_buffer)
   InsertComment()
-  testWindow.MakePopup()
+  testWindow.MakePopup(0)
   testWindow.SetBuffer({
     "################################################################################",
     "################################### LOADING ###################################",
