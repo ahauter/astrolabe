@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	gemini "gemini/gemini"
 
@@ -38,6 +39,11 @@ func MakeCommandHandler(model *gemini.GenerationModel) protocol.WorkspaceExecute
 		case "create_tests":
 			comment := params.Arguments[0].(string)
 			file_name := params.Arguments[1].(string)
+			ext_index := strings.LastIndex(file_name, ".")
+			if ext_index < 0 {
+				return "", errors.New("Invalid file name")
+			}
+			file_name = file_name[:ext_index] + "_test" + file_name[ext_index:]
 			tests, err := model.CreateTests(comment)
 			tests = tests + "\n" + "__astro_test_file_path__=" + file_name + "\n"
 			return tests, err

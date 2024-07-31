@@ -1,5 +1,5 @@
-commentWindow = require("lua.comment_edit_window")
-testWindow = require("lua.test_edit_pane")
+local commentWindow = require("lua.comment_edit_window")
+local testWindow = require("lua.test_edit_pane")
 
 local id = nil
 local cur_buffer = nil
@@ -123,14 +123,21 @@ function CreateTests()
         print("Error generating tests: " .. err)
         return
       end
-      tests_output = {}
+      tests_output = {
+        "q to Quit",
+        "a to Append to to <test_file>",
+        "c to Create new test file"
+      }
       test_file_path = ""
       for line in result:gmatch("([^\n]*)\n?") do
-        start_ind, end_ind = string.find(line, "__astro_test_file_path__=")
-        if start_ind ~= nil and start_ind >= 0 then
-          print(line)
+        name_start_ind, name_end_ind = string.find(line, "__astro_test_file_path__=")
+        indicator_start_ind, indicator_end_ind = string.find(line, "```")
+        if name_start_ind ~= nil and name_start_ind >= 0 then
+          test_file_path = string.sub(line, name_end_ind + 1, -1)
+          testWindow.SetBufferName(test_file_path)
+        elseif not (indicator_start_ind ~= nil and indicator_start_ind >= 0) then
+          table.insert(tests_output, line)
         end
-        table.insert(tests_output, line)
       end
       testWindow.SetBuffer(tests_output)
     end)

@@ -12,6 +12,9 @@ function M.SetBuffer(lines)
 end
 
 function M.SetBufferName(name)
+  print(test_edit_buffer)
+  print(name)
+  vim.api.nvim_buf_set_name(test_edit_buffer, name)
 end
 
 --TODO Maybe add a vertical split in buffer
@@ -21,10 +24,10 @@ function M.MakePopup()
   end
   test_edit_buffer = vim.api.nvim_create_buf(true, true)
   if instruction_buffer == nil then
-    instruction_buffer = vim.api.nvim_create_buf(true, true)
+    local instruction_buffer = vim.api.nvim_create_buf(true, true)
   end
   --TODO logic for comments under function header
-  insert_line = vim.fn.getpos("'<")[2] - 1
+  local insert_line = vim.fn.getpos("'<")[2] - 1
   local width = 100
   local height = 40
   local borderchars = { "─", "│", "─", "│", "╭", "╮", "╯", "╰" }
@@ -32,11 +35,6 @@ function M.MakePopup()
   local win_id = vim.api.nvim_get_current_win()
   vim.api.nvim_win_set_buf(win_id, test_edit_buffer)
   window_id = win_id
-  M.SetBuffer({
-    "q to Quit",
-    "a to Append to to <test_file>",
-    "c to Create new test file"
-  })
   vim.api.nvim_buf_set_keymap(test_edit_buffer,
     "n", "q",
     ":<C-u>call v:lua.CloseTestWindow()<CR>",
