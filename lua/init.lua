@@ -103,6 +103,7 @@ function CreateTests()
   comment = commentWindow.GetCommentLines()
   comment = table.concat(comment, '\n')
   file_name = vim.api.nvim_buf_get_name(commentWindow.file_buffer)
+  file_type = vim.api.nvim_buf_get_option(commentWindow.file_buffer, 'filetype')
   InsertComment()
   testWindow.MakePopup(0)
   testWindow.SetBuffer({
@@ -111,7 +112,7 @@ function CreateTests()
     "################################################################################"
   })
   resp = client.request("workspace/executeCommand", {
-      command = "create_tests", arguments = { comment, file_name }
+      command = "create_tests", arguments = { comment, file_name, file_type }
     },
     function(err, result, ctx, config)
       if err ~= nil then
@@ -123,11 +124,7 @@ function CreateTests()
         print("Error generating tests: " .. err)
         return
       end
-      tests_output = {
-        "q to Quit",
-        "a to Append to to <test_file>",
-        "c to Create new test file"
-      }
+      tests_output = {}
       test_file_path = ""
       for line in result:gmatch("([^\n]*)\n?") do
         name_start_ind, name_end_ind = string.find(line, "__astro_test_file_path__=")

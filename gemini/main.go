@@ -39,7 +39,7 @@ func FilterComments(code string) string {
     `,
 	)
 
-	fmt.Println(model.CreateTests(comment))
+	fmt.Println(model.CreateTests(comment, "go"))
 }
 
 type GenerationModel struct {
@@ -81,9 +81,9 @@ func FilterComments(code string) string {
 	return strings.Join(lines, "\n")
 }
 
-func (m *GenerationModel) CreateTests(code string) (string, error) {
+func (m *GenerationModel) CreateTests(code string, file_type string) (string, error) {
 	prompt := fmt.Sprintf(
-		"Write unit tests in golang for the function with this header comment %s",
+		"Write unit tests in "+file_type+" for the function with this header comment %s",
 		code,
 	)
 	resp, err := m.model.GenerateContent(

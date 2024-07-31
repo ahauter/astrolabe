@@ -39,18 +39,20 @@ func MakeCommandHandler(model *gemini.GenerationModel) protocol.WorkspaceExecute
 		case "create_tests":
 			comment := params.Arguments[0].(string)
 			file_name := params.Arguments[1].(string)
+			file_type := params.Arguments[2].(string)
+			if file_type == "" {
+				return "", errors.New("Invalid file type")
+			}
 			ext_index := strings.LastIndex(file_name, ".")
 			if ext_index < 0 {
 				return "", errors.New("Invalid file name")
 			}
 			file_name = file_name[:ext_index] + "_test" + file_name[ext_index:]
-			tests, err := model.CreateTests(comment)
+			tests, err := model.CreateTests(comment, file_type)
 			tests = tests + "\n" + "__astro_test_file_path__=" + file_name + "\n"
 			return tests, err
 		case "run_diagnostics":
-			comment := params.Arguments[len(params.Arguments)-1].(string)
-			tests, err := model.CreateTests(comment)
-			return tests, err
+			return "", nil
 		case "clear_diagnostics":
 			clear_diagnostics := protocol.PublishDiagnosticsParams{
 				URI:         "file:///home/austin/Repositories/Personal/astrolabe/lsp/server.go",
