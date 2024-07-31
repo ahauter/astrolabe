@@ -4,6 +4,15 @@ local testWindow = require("lua.test_edit_pane")
 local id = nil
 local cur_buffer = nil
 
+local function getBufferByName(name)
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    local buf_name = vim.api.nvim_buf_get_name(buf)
+    if buf_name == name then
+      return buf
+    end
+  end
+  return -1
+end
 local function attach_lsp(args)
   if id == nil then
     return
@@ -131,6 +140,9 @@ function CreateTests()
         indicator_start_ind, indicator_end_ind = string.find(line, "```")
         if name_start_ind ~= nil and name_start_ind >= 0 then
           test_file_path = string.sub(line, name_end_ind + 1, -1)
+          if getBufferByName(test_file_path) > 0 then
+            print("Buffer exists")
+          end
           testWindow.SetBufferName(test_file_path)
         elseif not (indicator_start_ind ~= nil and indicator_start_ind >= 0) then
           table.insert(tests_output, line)
