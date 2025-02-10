@@ -36,7 +36,7 @@ local function start_lsp()
   end
   id = vim.lsp.start({
     name = 'Code Assistant',
-    cmd = { 'go', 'run', 'lsp/server.go' },
+    cmd = { 'lsp' },
     root_dir = vim.loop.cwd(),
   })
 end
@@ -76,6 +76,9 @@ end
 
 function CreateComment()
   client = vim.lsp.get_client_by_id(id)
+  if client == nil then
+    print("CLIENT IS NIL, exiting")
+  end
   -- or use api.nvim_buf_get_lines
   local lines = get_visual_selection()
   commentWindow.MakePopup()

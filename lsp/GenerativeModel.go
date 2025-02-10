@@ -10,7 +10,6 @@ import (
 	"strings"
 )
 
-// TODO
 type Message struct {
 	sender  string
 	content string
@@ -96,5 +95,5 @@ func FilterComments(code string) string {
 			}
 		}
 	}
-	return strings.Join(lines, "\n")
+	return code //strings.Join(lines, "\n")
 }

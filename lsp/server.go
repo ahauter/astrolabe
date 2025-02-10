@@ -82,16 +82,7 @@ func main() {
 		endpoint: "http://127.0.0.1:8080/",
 		model:    "TheBloke/deepseek-coder-6.7B-instruct-GGUF",
 	}
-	s, err := model.completion("Write a function that greets a user given a name")
-	if err != nil {
-		log.Println("error in model")
-		log.Println(err)
-	} else {
-		log.Println(s)
-	}
 	CommandHandler := MakeCommandHandler(model)
-	return
-	log.Println("Starting lsp server")
 	handler = protocol.Handler{
 		Initialize:              initialize,
 		Initialized:             initialized,
