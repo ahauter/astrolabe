@@ -6,8 +6,6 @@ import (
 	"log"
 	"strings"
 
-	gemini "gemini/gemini"
-
 	"github.com/tliron/commonlog"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
@@ -25,7 +23,7 @@ var (
 	handler protocol.Handler
 )
 
-func MakeCommandHandler(model *gemini.GenerationModel) protocol.WorkspaceExecuteCommandFunc {
+func MakeCommandHandler(model GenerativeModelAPI) protocol.WorkspaceExecuteCommandFunc {
 	return func(context *glsp.Context, params *protocol.ExecuteCommandParams) (any, error) {
 		log.Println("Received Command")
 		command := params.Command
@@ -78,13 +76,21 @@ func MakeCommandHandler(model *gemini.GenerationModel) protocol.WorkspaceExecute
 // - An error if the model is nil.
 func main() {
 	// This increases logging verbosity (optional)
-	commonlog.Configure(1, nil)
-
-	model, err := gemini.NewGenerationModel()
+	path := "out.txt"
+	commonlog.Configure(1, &path)
+	model := GenerativeModelAPI{
+		endpoint: "http://127.0.0.1:8080/",
+		model:    "TheBloke/deepseek-coder-6.7B-instruct-GGUF",
+	}
+	s, err := model.completion("Write a function that greets a user given a name")
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Println("error in model")
+		log.Println(err)
+	} else {
+		log.Println(s)
 	}
 	CommandHandler := MakeCommandHandler(model)
+	return
 	log.Println("Starting lsp server")
 	handler = protocol.Handler{
 		Initialize:              initialize,
