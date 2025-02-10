@@ -1,0 +1,3 @@
+cd lsp
+go install .
+
