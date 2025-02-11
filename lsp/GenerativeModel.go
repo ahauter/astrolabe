@@ -61,8 +61,11 @@ func (GenerativeModelAPI) CreateTests(c string, file_type string) (string, error
 }
 
 func (m GenerativeModelAPI) CreateComment(code string) (string, error) {
-	prompt := fmt.Sprintf(
-		"Write a comment for the following code, include details about parameters, return, and possible errors.\n Only write the function header comment, do not write any code.\n %s",
+	prompt := fmt.Sprintf(`You are a technical writer documenting a codebase.
+		Write a comment for the following code,
+		include details about parameters, return, and possible errors.
+		Use the following comment symbols appropriate for the language: #, //, or --
+		Only write the function header comment, do not write any code.\n %s`,
 		code,
 	)
 	resp, err := m.completion(prompt)
