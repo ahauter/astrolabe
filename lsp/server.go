@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/tliron/commonlog"
@@ -24,11 +23,13 @@ var (
 )
 
 func MakeCommandHandler(model GenerativeModelAPI) protocol.WorkspaceExecuteCommandFunc {
+	log := commonlog.GetLogger("lsp.commandhandler")
+	log.SetMaxLevel(commonlog.Debug)
 	return func(context *glsp.Context, params *protocol.ExecuteCommandParams) (any, error) {
-		log.Println("Received Command")
+		log.Debug("Received Command")
 		command := params.Command
-		log.Println(command)
-		log.Println(params.Arguments)
+		log.Debug(command)
+		log.Debugf("%s", params.Arguments)
 		switch command {
 		case "create_comment":
 			file_type := params.Arguments[0].(string)
@@ -36,7 +37,7 @@ func MakeCommandHandler(model GenerativeModelAPI) protocol.WorkspaceExecuteComma
 				return "", errors.New("Invalid file type")
 			}
 			code := params.Arguments[len(params.Arguments)-1].(string)
-			comment, err := model.CreateComment(file_type, code)
+			comment, err := model.CreateComment(file_type, code, commonlog.NewScopeLogger(log, "createComment"))
 			return comment, err
 		case "create_tests":
 			comment := params.Arguments[0].(string)
@@ -82,6 +83,7 @@ func main() {
 	// This increases logging verbosity (optional)
 	path := "out.txt"
 	commonlog.Configure(1, &path)
+	log := commonlog.GetLogger("lsp.init")
 	model := GenerativeModelAPI{
 		endpoint: "http://127.0.0.1:8080/",
 		model:    "TheBloke/deepseek-coder-6.7B-instruct-GGUF",
@@ -97,7 +99,7 @@ func main() {
 	server := server.NewServer(&handler, lsName, false)
 
 	server.RunStdio()
-	log.Println("Starting lsp server")
+	log.Info("Starting lsp server")
 }
 
 // initialize provides the initialization parameters as
@@ -116,13 +118,15 @@ func initialize(context *glsp.Context, params *protocol.InitializeParams) (any, 
 }
 
 func initialized(context *glsp.Context, params *protocol.InitializedParams) error {
-	log.Println("Initialized Server")
+	log := commonlog.GetLogger("lsp.init")
+	log.Info("Initialized Server")
 	return nil
 }
 
 func shutdown(context *glsp.Context) error {
+	log := commonlog.GetLogger("lsp.init")
 	protocol.SetTraceValue(protocol.TraceValueOff)
-	log.Println("Shutting down server")
+	log.Info("Shutting down server")
 	return nil
 }
 

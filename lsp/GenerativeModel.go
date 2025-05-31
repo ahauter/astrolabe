@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/tliron/commonlog"
+	_ "github.com/tliron/commonlog/simple"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -35,15 +36,15 @@ type CompletionRequest struct {
 	Prompt string `json:"prompt"`
 }
 
-func (m *GenerativeModelAPI) completion(prompt string) (string, error) {
+func (m *GenerativeModelAPI) completion(prompt string, log commonlog.Logger) (string, error) {
 	req := &CompletionRequest{Prompt: prompt + "\n<|im_start|>assistant\n"}
-	log.Println(req.Prompt)
+	log.Debug(req.Prompt)
 	json_data, err := json.Marshal(req)
 	if err != nil {
-		log.Println("Error encoding prompt")
+		log.Error("Error encoding prompt")
 		return "", err
 	}
-	log.Println(string(json_data))
+	log.Debug(string(json_data))
 	resp, err := http.Post(
 		m.endpoint+"completions",
 		"application/string",
@@ -68,7 +69,7 @@ func wrapPrompt(prompt string, role string) string {
 	return result
 }
 
-func (m GenerativeModelAPI) CreateComment(file_type string, code string) (string, error) {
+func (m GenerativeModelAPI) CreateComment(file_type string, code string, log commonlog.Logger) (string, error) {
 	_, dir, _, _ := runtime.Caller(0)
 	dir = filepath.Dir(dir)
 	prompt, err := os.ReadFile(filepath.Join(dir, "prompts/CreateComment.prmpt"))
@@ -78,7 +79,7 @@ func (m GenerativeModelAPI) CreateComment(file_type string, code string) (string
 	prompt_str := fmt.Sprintf(string(prompt), file_type)
 	code = wrapPrompt(code, "system")
 	prompt_str = wrapPrompt(prompt_str, "system")
-	resp, err := m.completion(prompt_str + code)
+	resp, err := m.completion(prompt_str+code, log)
 	if err != nil {
 		return "", err
 	}
