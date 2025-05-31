@@ -23,14 +23,7 @@ function M.MakePopup(cur_buf)
   local file_type  = vim.api.nvim_buf_get_option(cur_buf, 'filetype')
   vim.api.nvim_buf_set_option(test_edit_buffer, 'buftype', buf_type)
   vim.api.nvim_buf_set_option(test_edit_buffer, 'filetype', file_type)
-  if instruction_buffer == nil then
-    local instruction_buffer = vim.api.nvim_create_buf(true, true)
-  end
   --TODO logic for comments under function header
-  local insert_line = vim.fn.getpos("'<")[2] - 1
-  local width = 100
-  local height = 40
-  local borderchars = { "─", "│", "─", "│", "╭", "╮", "╯", "╰" }
   vim.cmd("vsplit")
   local win_id = vim.api.nvim_get_current_win()
   vim.api.nvim_win_set_buf(win_id, test_edit_buffer)
