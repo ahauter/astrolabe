@@ -75,18 +75,11 @@ local function get_visual_selection()
 end
 
 
+Lines = {}
+File_type = ""
 function CreateComment()
-  if id == nil then
-    start_lsp()
-  end
-  print("Client ID " .. id)
-  client = vim.lsp.get_client_by_id(id)
-  if client == nil then
-    print("CLIENT IS NIL, exiting")
-    return
-  end
   -- or use api.nvim_buf_get_lines
-  local lines = get_visual_selection()
+  Lines = get_visual_selection()
   commentWindow.MakePopup()
   commentWindow.AddInstructions({
     "q Quit",
@@ -99,9 +92,21 @@ function CreateComment()
     "################################### LOADING ###################################",
     "################################################################################"
   })
-  file_type = vim.api.nvim_buf_get_option(commentWindow.file_buffer, 'filetype')
-  resp = client.request("workspace/executeCommand", {
-      command = "create_comment", arguments = { file_type, lines }
+  File_type = vim.api.nvim_buf_get_option(commentWindow.file_buffer, 'filetype')
+  GenerateComment()
+end
+
+function GenerateComment()
+  if id == nil then
+    start_lsp()
+  end
+  local client = vim.lsp.get_client_by_id(id)
+  if client == nil then
+    print("CLIENT IS NIL, exiting")
+    return
+  end
+  client.request("workspace/executeCommand", {
+      command = "create_comment", arguments = { File_type, Lines }
     },
     function(err, result, ctx, config)
       if err ~= nil then
@@ -109,7 +114,7 @@ function CreateComment()
         commentWindow.SetBuffer({ "#############", "Error", "#############" })
         return
       end
-      comment = {}
+      local comment = {}
       for line in result:gmatch("([^\n]*)\n?") do
         table.insert(comment, line)
       end

@@ -31,6 +31,7 @@ function InsertComment()
     vim.api.nvim_buf_line_count(foreground_buffer) - 1,
     false
   )
+  -- a new line to the comment does not get inserted ..
   vim.api.nvim_buf_set_lines(M.file_buffer, insert_line, insert_line, false, comment_lines)
   CloseWindow()
 end
@@ -96,6 +97,10 @@ function M.AllowSaving()
   vim.api.nvim_buf_set_keymap(foreground_buffer,
     "n", "x",
     ":<C-u>call v:lua.InsertComment()<CR>",
+    { silent = true })
+  vim.api.nvim_buf_set_keymap(foreground_buffer,
+    "n", "r",
+    ":<C-u>call v:lua.GenerateComment()<CR>",
     { silent = true })
   vim.api.nvim_buf_set_keymap(foreground_buffer,
     "n", "t",
