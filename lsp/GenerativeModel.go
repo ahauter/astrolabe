@@ -98,13 +98,33 @@ func RespToStr(resp CompletionResponse) string {
 
 func FilterComments(code string) string {
 	commentStyles := []string{"//", "#", "--"}
-	//TODO multiline comments
+	blockCommentsOpener := []string{"/*", "\"\"\"", "'''", "--[["}
+	blockCommentsCloser := map[string]string{
+		"/*":     "*/",
+		"\"\"\"": "\"\"\"",
+		"'''":    "'''",
+		"--[[":   "]]--",
+	}
 	lines := []string{}
+	curOpener := ""
 	for _, line := range strings.Split(code, "\n") {
-		for _, comment := range commentStyles {
-			line_trimmed := strings.TrimSpace(line)
-			if strings.HasPrefix(line_trimmed, comment) {
-				lines = append(lines, line_trimmed)
+		line_trimmed := strings.TrimSpace(line)
+		if curOpener != "" {
+			if strings.HasPrefix(line_trimmed, blockCommentsCloser[curOpener]) {
+				curOpener = ""
+			}
+			lines = append(lines, line_trimmed)
+		} else {
+			for _, blockOpener := range blockCommentsOpener {
+				if strings.HasPrefix(line_trimmed, blockOpener) {
+					curOpener = blockOpener
+					lines = append(lines, line_trimmed)
+				}
+			}
+			for _, comment := range commentStyles {
+				if strings.HasPrefix(line_trimmed, comment) {
+					lines = append(lines, line_trimmed)
+				}
 			}
 		}
 	}
