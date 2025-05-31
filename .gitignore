@@ -2,3 +2,4 @@
 .env
 log
 lsp/lsp
+out.txt
