@@ -13,6 +13,7 @@ local function getBufferByName(name)
   end
   return -1
 end
+
 local function attach_lsp(args)
   if id == nil then
     return
@@ -78,6 +79,7 @@ function CreateComment()
   client = vim.lsp.get_client_by_id(id)
   if client == nil then
     print("CLIENT IS NIL, exiting")
+    return
   end
   -- or use api.nvim_buf_get_lines
   local lines = get_visual_selection()
