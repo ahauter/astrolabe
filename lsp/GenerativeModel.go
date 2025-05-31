@@ -7,6 +7,9 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -66,20 +69,16 @@ func wrapPrompt(prompt string, role string) string {
 }
 
 func (m GenerativeModelAPI) CreateComment(file_type string, code string) (string, error) {
-	prompt := fmt.Sprintf(`You are a technical writer documenting a codebase.
-		Write a specific, detailed comment for the following code,
-		include every detail you can find about parameters, return, and possible errors.
-		You MUST Only write the function header comment.
-		You will be penalized if you write any code.
-		You will be penalized if you write an imcomplete comment
-		The file type is %s.
-		Use the following comment symbols appropriate for the file type: #, //, or --
-		\n`,
-		file_type,
-	)
+	_, dir, _, _ := runtime.Caller(0)
+	dir = filepath.Dir(dir)
+	prompt, err := os.ReadFile(filepath.Join(dir, "prompts/CreateComment.prmpt"))
+	if err != nil {
+		return "", fmt.Errorf("Could not read prmpts/CreateComment.prmpt from %s", dir)
+	}
+	prompt_str := fmt.Sprintf(string(prompt), file_type)
 	code = wrapPrompt(code, "system")
-	prompt = wrapPrompt(prompt, "system")
-	resp, err := m.completion(prompt + code)
+	prompt_str = wrapPrompt(prompt_str, "system")
+	resp, err := m.completion(prompt_str + code)
 	if err != nil {
 		return "", err
 	}
