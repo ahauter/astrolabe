@@ -71,6 +71,7 @@ func (m GenerativeModelAPI) CreateComment(file_type string, code string) (string
 		include every detail you can find about parameters, return, and possible errors.
 		You MUST Only write the function header comment.
 		You will be penalized if you write any code.
+		You will be penalized if you write an imcomplete comment
 		The file type is %s.
 		Use the following comment symbols appropriate for the file type: #, //, or --
 		\n`,
