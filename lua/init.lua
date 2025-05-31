@@ -76,6 +76,10 @@ end
 
 
 function CreateComment()
+  if id == nil then
+    start_lsp()
+  end
+  print("Client ID " .. id)
   client = vim.lsp.get_client_by_id(id)
   if client == nil then
     print("CLIENT IS NIL, exiting")
