@@ -33,7 +33,7 @@ type CompletionRequest struct {
 }
 
 func (m *GenerativeModelAPI) completion(prompt string) (string, error) {
-	req := &CompletionRequest{Prompt: prompt}
+	req := &CompletionRequest{Prompt: prompt + "\n<|im_start|>assistant\n"}
 	log.Println(req.Prompt)
 	json_data, err := json.Marshal(req)
 	if err != nil {
@@ -60,15 +60,25 @@ func (GenerativeModelAPI) CreateTests(c string, file_type string) (string, error
 	return "", nil
 }
 
-func (m GenerativeModelAPI) CreateComment(code string) (string, error) {
+func wrapPrompt(prompt string, role string) string {
+	result := fmt.Sprintf(`<|im_start|>%s %s<|im_end|>`, role, prompt)
+	return result
+}
+
+func (m GenerativeModelAPI) CreateComment(file_type string, code string) (string, error) {
 	prompt := fmt.Sprintf(`You are a technical writer documenting a codebase.
-		Write a comment for the following code,
-		include details about parameters, return, and possible errors.
-		Use the following comment symbols appropriate for the language: #, //, or --
-		Only write the function header comment, do not write any code.\n %s`,
-		code,
+		Write a specific, detailed comment for the following code,
+		include every detail you can find about parameters, return, and possible errors.
+		You MUST Only write the function header comment.
+		You will be penalized if you write any code.
+		The file type is %s.
+		Use the following comment symbols appropriate for the file type: #, //, or --
+		\n`,
+		file_type,
 	)
-	resp, err := m.completion(prompt)
+	code = wrapPrompt(code, "system")
+	prompt = wrapPrompt(prompt, "system")
+	resp, err := m.completion(prompt + code)
 	if err != nil {
 		return "", err
 	}
@@ -98,5 +108,5 @@ func FilterComments(code string) string {
 			}
 		}
 	}
-	return code //strings.Join(lines, "\n")
+	return strings.Join(lines, "\n")
 }

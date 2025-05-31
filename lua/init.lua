@@ -99,12 +99,13 @@ function CreateComment()
     "################################### LOADING ###################################",
     "################################################################################"
   })
+  file_type = vim.api.nvim_buf_get_option(commentWindow.file_buffer, 'filetype')
   resp = client.request("workspace/executeCommand", {
-      command = "create_comment", arguments = { lines }
+      command = "create_comment", arguments = { file_type, lines }
     },
     function(err, result, ctx, config)
       if err ~= nil then
-        print("Error generating comment: " .. err)
+        print(string.format("Error generating comment: %q", err))
         commentWindow.SetBuffer({ "#############", "Error", "#############" })
         return
       end

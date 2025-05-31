@@ -31,8 +31,12 @@ func MakeCommandHandler(model GenerativeModelAPI) protocol.WorkspaceExecuteComma
 		log.Println(params.Arguments)
 		switch command {
 		case "create_comment":
+			file_type := params.Arguments[0].(string)
+			if file_type == "" {
+				return "", errors.New("Invalid file type")
+			}
 			code := params.Arguments[len(params.Arguments)-1].(string)
-			comment, err := model.CreateComment(code)
+			comment, err := model.CreateComment(file_type, code)
 			return comment, err
 		case "create_tests":
 			comment := params.Arguments[0].(string)
