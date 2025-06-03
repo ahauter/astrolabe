@@ -15,8 +15,16 @@ LUA_LANGUAGE = Language(tslua.language())
 
 PYTHON_QUERY = PYTHON_LANGUAGE.query("""
 (function_definition
- name: (identifier) @function.def
- body: (block) @function.block
+ name: (identifier)
+ body: (block
+    (expression_statement
+     (string
+      (string_start)
+      (string_content) @comment_text
+      (string_end)
+     )
+    )
+  )
  )
 """)
 
