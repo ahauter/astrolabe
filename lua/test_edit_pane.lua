@@ -3,6 +3,22 @@ local window_id = nil
 
 local M = {}
 
+--[[
+Name: M.SetBuffer
+
+Description:
+This function sets the lines in the buffer specified by `test_edit_buffer` with the given lines.
+The number of lines in the buffer is increased by the number of new lines provided.
+
+Parameters:
+- lines: table: A table of strings representing the lines to be set in the buffer.
+
+Returns:
+- None
+
+Errors:
+- If `test_edit_buffer` is `nil`, the function will return immediately without doing anything.
+]]
 function M.SetBuffer(lines)
   if test_edit_buffer == nil then
     return
