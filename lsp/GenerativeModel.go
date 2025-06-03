@@ -102,9 +102,10 @@ func FilterComments(code string) string {
 	blockCommentsOpener := []string{"/*", "\"\"\"", "'''", "--[["}
 	blockCommentsCloser := map[string]string{
 		"/*":     "*/",
+		"/**":    "*/",
 		"\"\"\"": "\"\"\"",
 		"'''":    "'''",
-		"--[[":   "]]--",
+		"--[[":   "]]",
 	}
 	lines := []string{}
 	curOpener := ""
