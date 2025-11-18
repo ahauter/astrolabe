@@ -1,5 +1,5 @@
-local commentWindow = require("lua.comment_edit_window")
-local testWindow = require("lua.test_edit_pane")
+local commentWindow = require("astrolabe.comment_edit_window")
+local testWindow = require("astrolabe.test_edit_pane")
 
 local id = nil
 local cur_buffer = nil
