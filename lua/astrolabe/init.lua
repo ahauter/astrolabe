@@ -35,9 +35,6 @@ local function start_lsp()
   if id ~= nil then
     return
   end
-  if os.getenv("ASTROLABE_LOG_DIR") == nil then
-    os.setenv("ASTROLABE_LOG_DIR", vim.loop.cwd() .. "/lsp.astro.log")
-  end
   id = vim.lsp.start({
     name = 'Code Assistant',
     cmd = { 'lsp' },

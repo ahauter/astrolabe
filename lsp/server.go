@@ -85,7 +85,7 @@ func main() {
 	// This increases logging verbosity (optional)
 	path := os.Getenv("ASTROLABE_LOG_DIR")
 	if path == "" {
-		log.Fatal("Set astrolabe log directory")
+		path = "/home/austin/astrologs/lsp.astro.log"
 	}
 	commonlog.Configure(1, &path)
 	log := commonlog.GetLogger("lsp.init")
