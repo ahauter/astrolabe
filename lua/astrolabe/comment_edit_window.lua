@@ -40,7 +40,7 @@ function InsertComment()
   comment_lines = vim.api.nvim_buf_get_lines(
     foreground_buffer,
     0,
-    vim.api.nvim_buf_line_count(foreground_buffer) - 1,
+    vim.api.nvim_buf_line_count(foreground_buffer),
     false
   )
   log.info("InsertComment: ")
