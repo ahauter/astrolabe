@@ -1,10 +1,13 @@
 popup = require('plenary.popup')
+require("logging.rolling_file")
 insert_line = nil
 foreground_buffer = nil
 instruction_buffer = nil
 window_id = nil
 second_window_id = nil
 local M = {}
+local log_dir = os.getenv("ASTROLABE_LOG_DIR")
+local logger = logging.rolling_file(log_dir, 100000, 5)
 
 M.file_buffer = nil
 
@@ -31,6 +34,8 @@ function InsertComment()
     vim.api.nvim_buf_line_count(foreground_buffer) - 1,
     false
   )
+  logger:info("InsertComment: ")
+  logger:info(table.concat(comment_lines, "\n"))
   -- a new line to the comment does not get inserted ..
   vim.api.nvim_buf_set_lines(M.file_buffer, insert_line, insert_line, false, comment_lines)
   CloseWindow()
