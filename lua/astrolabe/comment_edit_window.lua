@@ -8,13 +8,15 @@ window_id = nil
 second_window_id = nil
 local M = {}
 
+local log_path = vim.loop.cwd() .. "/selected.astro.log"
+print(log_path)
 -- Create a custom logger
 local log = require('plenary.log').new({
   plugin = "my_plugin",
   level = "debug",
   use_console = "sync",
   use_file = true,
-  outfile = vim.loop.cwd() .. "/selected.astro.log"
+  outfile = log_path
 })
 
 M.file_buffer = nil
