@@ -1,6 +1,5 @@
 popup = require('plenary.popup')
 local log = require('plenary.log')
-require("logging.rolling_file")
 insert_line = nil
 foreground_buffer = nil
 instruction_buffer = nil
