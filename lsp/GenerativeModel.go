@@ -47,6 +47,22 @@ type CompletionRequest struct {
 //
 // Returns:
 // - A string that is the completion of the prompt
+/**
+Completes the given prompt using the Generative Model API.
+
+Parameters:
+- prompt: The prompt to complete.
+- log: The logger to use for logging.
+
+Returns:
+- string: The completed prompt.
+- error: Any error that occurred during the completion.
+
+Errors:
+- Returns an error if there was an issue marshaling the request to JSON.
+- Returns an error if there was an issue making the HTTP request.
+- Returns an error if there was an issue unmarshaling the response from JSON.
+*/
 func (m *GenerativeModelAPI) completion(prompt string, log commonlog.Logger) (string, error) {
 	req := &CompletionRequest{Prompt: prompt}
 	log.Debug(req.Prompt)

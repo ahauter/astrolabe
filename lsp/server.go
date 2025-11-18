@@ -3,8 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
-	"os"
 	"strings"
 
 	"github.com/tliron/commonlog"
@@ -83,10 +81,7 @@ func MakeCommandHandler(model GenerativeModelAPI) protocol.WorkspaceExecuteComma
 // - An error if the model is nil.
 func main() {
 	// This increases logging verbosity (optional)
-	path := os.Getenv("ASTROLABE_LOG_DIR")
-	if path == "" {
-		path = "/home/austin/astrologs/lsp.astro.log"
-	}
+	path := "/home/austin/astrologs/lsp.astro.log"
 	commonlog.Configure(1, &path)
 	log := commonlog.GetLogger("lsp.init")
 	model := GenerativeModelAPI{
