@@ -1,4 +1,5 @@
 popup = require('plenary.popup')
+local log = require('plenary.log')
 require("logging.rolling_file")
 insert_line = nil
 foreground_buffer = nil
@@ -6,8 +7,15 @@ instruction_buffer = nil
 window_id = nil
 second_window_id = nil
 local M = {}
-local log_dir = os.getenv("ASTROLABE_LOG_DIR")
-local logger = logging.rolling_file(log_dir, 100000, 5)
+
+-- Create a custom logger
+local log = require('plenary.log').new({
+  plugin = "my_plugin",
+  level = "debug",
+  use_console = "sync",
+  use_file = true,
+  outfile = vim.loop.cwd() .. "/selected.astro.log"
+})
 
 M.file_buffer = nil
 
@@ -34,8 +42,8 @@ function InsertComment()
     vim.api.nvim_buf_line_count(foreground_buffer) - 1,
     false
   )
-  logger:info("InsertComment: ")
-  logger:info(table.concat(comment_lines, "\n"))
+  log.info("InsertComment: ")
+  log.info(table.concat(comment_lines, "\n"))
   -- a new line to the comment does not get inserted ..
   vim.api.nvim_buf_set_lines(M.file_buffer, insert_line, insert_line, false, comment_lines)
   CloseWindow()
