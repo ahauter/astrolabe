@@ -26,7 +26,7 @@ end
 local function attach_lsp(args)
   log.debug("Attaching lsp")
   if id == nil then
-    log.Error("No lsp running")
+    log.error("No lsp running")
     return
   end
   vim.lsp.buf_attach_client(args.buffer, id);
