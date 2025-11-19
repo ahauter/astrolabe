@@ -47,7 +47,10 @@ local function start_lsp()
     cmd = { 'lsp' },
     root_dir = vim.loop.cwd(),
   })
+  log.info("Started LSP!")
+  log.info(string.format("client id =  %q", id))
 end
+start_lsp()
 
 local function stop_lsp()
   if id == nil then
