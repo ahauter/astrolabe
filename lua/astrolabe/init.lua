@@ -23,20 +23,6 @@ local function getBufferByName(name)
   return -1
 end
 
-local function attach_lsp(args)
-  log.debug("Attaching lsp")
-  if id == nil then
-    log.error("No lsp running")
-    return
-  end
-  vim.lsp.buf_attach_client(args.buffer, id);
-  vim.lsp.inline_completion.enable()
-  cur_buffer = args.buffer
-  log.debug(string.format("cur_buffer = %q", cur_buffer))
-end
-
-vim.api.nvim_create_autocmd("BufNew", { callback = attach_lsp });
-vim.api.nvim_create_autocmd("BufEnter", { callback = attach_lsp, });
 
 local function start_lsp()
   if id ~= nil then
@@ -50,7 +36,24 @@ local function start_lsp()
   log.info("Started LSP!")
   log.info(string.format("client id =  %q", id))
 end
-start_lsp()
+
+local function attach_lsp(args)
+  if id == nil then
+    start_lsp()
+  end
+  log.debug("Attaching lsp")
+  if id == nil then
+    log.error("No lsp running")
+    return
+  end
+  vim.lsp.buf_attach_client(args.buffer, id);
+  vim.lsp.inline_completion.enable()
+  cur_buffer = args.buffer
+  log.debug(string.format("cur_buffer = %q", cur_buffer))
+end
+
+vim.api.nvim_create_autocmd("BufNew", { callback = attach_lsp });
+vim.api.nvim_create_autocmd("BufEnter", { callback = attach_lsp, });
 
 local function stop_lsp()
   if id == nil then
