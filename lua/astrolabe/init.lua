@@ -1,3 +1,12 @@
+local log_path = "/home/austin/astrologs/extension.astro.log"
+-- Create a custom logger
+local log = require('plenary.log').new({
+  plugin = "astrolabe",
+  level = "debug",
+  use_console = "sync",
+  use_file = true,
+  outfile = log_path
+})
 local commentWindow = require("astrolabe.comment_edit_window")
 local testWindow = require("astrolabe.test_edit_pane")
 
@@ -15,12 +24,15 @@ local function getBufferByName(name)
 end
 
 local function attach_lsp(args)
+  log.debug("Attaching lsp")
   if id == nil then
+    log.Error("No lsp running")
     return
   end
   vim.lsp.buf_attach_client(args.buffer, id);
   vim.lsp.inline_completion.enable()
   cur_buffer = args.buffer
+  log.debug(string.format("cur_buffer = %q", cur_buffer))
 end
 
 vim.api.nvim_create_autocmd("BufNew", { callback = attach_lsp });

@@ -1,5 +1,4 @@
 popup = require('plenary.popup')
-local log = require('plenary.log')
 insert_line = nil
 foreground_buffer = nil
 instruction_buffer = nil
@@ -8,10 +7,9 @@ second_window_id = nil
 local M = {}
 
 local log_path = "/home/austin/astrologs/extension.astro.log"
-print(log_path)
 -- Create a custom logger
 local log = require('plenary.log').new({
-  plugin = "my_plugin",
+  plugin = "astrolabe",
   level = "debug",
   use_console = "sync",
   use_file = true,
@@ -19,7 +17,6 @@ local log = require('plenary.log').new({
 })
 
 M.file_buffer = nil
-
 function M.SetBuffer(lines)
   if foreground_buffer == nil then
     return
