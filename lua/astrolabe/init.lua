@@ -18,18 +18,13 @@ local function attach_lsp(args)
   if id == nil then
     return
   end
-
   vim.lsp.buf_attach_client(args.buffer, id);
+  vim.lsp.inline_completion.enable()
   cur_buffer = args.buffer
 end
 
-vim.api.nvim_create_autocmd("BufNew", {
-  callback = attach_lsp
-});
-
-vim.api.nvim_create_autocmd("BufEnter", {
-  callback = attach_lsp,
-});
+vim.api.nvim_create_autocmd("BufNew", { callback = attach_lsp });
+vim.api.nvim_create_autocmd("BufEnter", { callback = attach_lsp, });
 
 local function start_lsp()
   if id ~= nil then
