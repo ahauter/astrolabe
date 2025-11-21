@@ -39,7 +39,7 @@ local function getBufferByName(name)
 end
 
 
-local function start_lsp()
+function start_lsp()
   local id = getLspClient(LSP_NAME)
   if id ~= nil then
     return
@@ -215,9 +215,6 @@ start_lsp()
 -- - The function uses the `vim.lsp.util.make_position_params()` to get the current cursor position.
 -- - If the LSP client is not available, the function will not perform any actions.
 -- - If there are no completion items, it will print "No items".
---
-
---[[
 local function get_lsp_completions()
   print("LM completions")
   local client = getLspClient("Astrolabe")
@@ -252,4 +249,3 @@ end
 vim.api.nvim_create_autocmd("InsertEnter", {
   callback = get_lsp_completions,
 })
-]]
