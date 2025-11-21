@@ -2,7 +2,7 @@
 local log_path = "/home/austin/astrologs/client.nvim.astro.log"
 local log = require('plenary.log').new({
   plugin = "astrolabe",
-  level = "info",
+  level = "debug",
   use_console = "sync",
   use_file = true,
   outfile = log_path
@@ -13,7 +13,7 @@ local cur_buffer = nil
 local LSP_NAME = "Astrolabe"
 
 local function getLspClient(name)
-  local clients = vim.lsp.get_active_clients({ bufnr = 0 }) -- get clients for current buffer
+  local clients = vim.lsp.get_active_clients() -- get clients for current buffer
   local client
 
   for _, c in ipairs(clients) do
@@ -38,27 +38,28 @@ local function getBufferByName(name)
   return -1
 end
 
-
 function start_lsp()
+  log.info("Starting LSP!")
   local id = getLspClient(LSP_NAME)
   if id ~= nil then
+    log.info("Astrolabe LSP started")
     return
   end
-  log.info("Starting LSP!")
   id = vim.lsp.start({
     name = LSP_NAME,
     cmd = { 'lsp' },
     root_dir = vim.loop.cwd(),
   })
-  log.info("Started LSP!")
   log.info(string.format("client id =  %q", id))
 end
+
+start_lsp()
 
 local function attach_lsp(args)
   local id = getLspClient(LSP_NAME)
   log.debug("Attaching lsp")
   if id == nil then
-    log.error("No lsp running")
+    log.debug("No lsp running")
     return
   end
   vim.lsp.buf_attach_client(args.buffer, id);
@@ -196,7 +197,6 @@ end
 
 vim.keymap.set('v', '<leader>c', ":<C-u>call v:lua.CreateComment()<CR>")
 
-start_lsp()
 
 --
 -- Fetches and prints language server protocol (LSP) completions at the current cursor position.
@@ -217,8 +217,9 @@ start_lsp()
 -- - If there are no completion items, it will print "No items".
 local function get_lsp_completions()
   print("LM completions")
-  local client = getLspClient("Astrolabe")
+  local client_id = getLspClient(LSP_NAME)
   local params = vim.lsp.util.make_position_params() -- current cursor position
+  local client = vim.lsp.get_client_by_id(client_id)
   if client then
     client.request(
       "textDocument/completion",
