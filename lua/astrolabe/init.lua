@@ -1,17 +1,32 @@
-local log_path = "/home/austin/astrologs/extension.astro.log"
 -- Create a custom logger
+local log_path = "/home/austin/astrologs/client.nvim.astro.log"
 local log = require('plenary.log').new({
   plugin = "astrolabe",
-  level = "debug",
+  level = "info",
   use_console = "sync",
   use_file = true,
   outfile = log_path
 })
 local commentWindow = require("astrolabe.comment_edit_window")
 local testWindow = require("astrolabe.test_edit_pane")
-
-local id = nil
 local cur_buffer = nil
+local LSP_NAME = "Astrolabe"
+
+local function getLspClient(name)
+  local clients = vim.lsp.get_active_clients({ bufnr = 0 }) -- get clients for current buffer
+  local client
+
+  for _, c in ipairs(clients) do
+    if c.name == name then
+      client = c
+    end
+  end
+
+  if not client then
+    return nil
+  end
+  return client.id
+end
 
 local function getBufferByName(name)
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
@@ -25,11 +40,13 @@ end
 
 
 local function start_lsp()
+  local id = getLspClient(LSP_NAME)
   if id ~= nil then
     return
   end
+  log.info("Starting LSP!")
   id = vim.lsp.start({
-    name = 'Code Assistant',
+    name = LSP_NAME,
     cmd = { 'lsp' },
     root_dir = vim.loop.cwd(),
   })
@@ -38,9 +55,7 @@ local function start_lsp()
 end
 
 local function attach_lsp(args)
-  if id == nil then
-    start_lsp()
-  end
+  local id = getLspClient(LSP_NAME)
   log.debug("Attaching lsp")
   if id == nil then
     log.error("No lsp running")
@@ -56,6 +71,7 @@ vim.api.nvim_create_autocmd("BufNew", { callback = attach_lsp });
 vim.api.nvim_create_autocmd("BufEnter", { callback = attach_lsp, });
 
 local function stop_lsp()
+  local id = getLspClient(LSP_NAME)
   if id == nil then
     return
   end
@@ -110,12 +126,10 @@ function CreateComment()
 end
 
 function GenerateComment()
-  if id == nil then
-    start_lsp()
-  end
+  local id = getLspClient(LSP_NAME)
   local client = vim.lsp.get_client_by_id(id)
   if client == nil then
-    print("CLIENT IS NIL, exiting")
+    log.error("Client is nil, exiting")
     return
   end
   client.request("workspace/executeCommand", {
@@ -137,10 +151,10 @@ function GenerateComment()
 end
 
 function CreateTests()
-  comment = commentWindow.GetCommentLines()
-  comment = table.concat(comment, '\n')
-  file_name = vim.api.nvim_buf_get_name(commentWindow.file_buffer)
-  file_type = vim.api.nvim_buf_get_option(commentWindow.file_buffer, 'filetype')
+  local comment = commentWindow.GetCommentLines()
+  local comment = table.concat(comment, '\n')
+  local file_name = vim.api.nvim_buf_get_name(commentWindow.file_buffer)
+  local file_type = vim.api.nvim_buf_get_option(commentWindow.file_buffer, 'filetype')
   InsertComment()
   testWindow.MakePopup(0)
   testWindow.SetBuffer({
@@ -161,11 +175,11 @@ function CreateTests()
         print("Error generating tests: " .. err)
         return
       end
-      tests_output = {}
-      test_file_path = ""
+      local tests_output = {}
+      local test_file_path = ""
       for line in result:gmatch("([^\n]*)\n?") do
-        name_start_ind, name_end_ind = string.find(line, "__astro_test_file_path__=")
-        indicator_start_ind, indicator_end_ind = string.find(line, "```")
+        local name_start_ind, name_end_ind = string.find(line, "__astro_test_file_path__=")
+        local indicator_start_ind, indicator_end_ind = string.find(line, "```")
         if name_start_ind ~= nil and name_start_ind >= 0 then
           test_file_path = string.sub(line, name_end_ind + 1, -1)
           if getBufferByName(test_file_path) > 0 then
@@ -183,3 +197,59 @@ end
 vim.keymap.set('v', '<leader>c', ":<C-u>call v:lua.CreateComment()<CR>")
 
 start_lsp()
+
+--
+-- Fetches and prints language server protocol (LSP) completions at the current cursor position.
+--
+-- This function retrieves completion suggestions from the LSP server named "Astrolabe" and prints each suggestion's label.
+--
+-- @function get_lsp_completions
+-- @return void
+-- @throws Error if there is an issue with the LSP request or if the LSP client is not available.
+--
+-- @example
+-- get_lsp_completions()
+-- -- This will print the completion suggestions at the current cursor position.
+--
+-- @note
+-- - The function uses the `vim.lsp.util.make_position_params()` to get the current cursor position.
+-- - If the LSP client is not available, the function will not perform any actions.
+-- - If there are no completion items, it will print "No items".
+--
+
+--[[
+local function get_lsp_completions()
+  print("LM completions")
+  local client = getLspClient("Astrolabe")
+  local params = vim.lsp.util.make_position_params() -- current cursor position
+  if client then
+    client.request(
+      "textDocument/completion",
+      params,
+      function(err, result, ctx, config)
+        if err then
+          print("LSP completion error:", err)
+          return
+        end
+
+        -- `result` can be an array or CompletionList
+        local items = result and result.items or result
+
+        if not items then
+          print("No items")
+          return
+        end
+
+        -- Now you have the completion items as Lua tables
+        for _, item in ipairs(items) do
+          print("Completion:", item.label)
+        end
+      end
+    )
+  end
+end
+
+vim.api.nvim_create_autocmd("InsertEnter", {
+  callback = get_lsp_completions,
+})
+]]
