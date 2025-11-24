@@ -198,6 +198,22 @@ end
 
 vim.keymap.set('v', '<leader>c', ":<C-u>call v:lua.CreateComment()<CR>")
 
+local function cancel_lsp_completions()
+  log.debug("Completions cancelled")
+  local client_id = getLspClient(LSP_NAME)
+  local client = vim.lsp.get_client_by_id(client_id)
+  if client then
+    for _, request in ipairs(client.requests) do
+      if client and client.requests then
+        for id, _ in pairs(client.requests) do
+          client.notify('$/cancelRequest', { id = id })
+        end
+      end
+    end
+  end
+  preview.ClearCompletion()
+end
+
 
 -- Fetches and prints language server protocol (LSP) completions at the current cursor position.
 --
@@ -221,6 +237,7 @@ local function get_lsp_completions()
   local client = vim.lsp.get_client_by_id(client_id)
   local params = vim.lsp.util.make_position_params(0, client.offset_encoding or 'utf-16')
   if client then
+    cancel_lsp_completions()
     client.request(
       "textDocument/completion",
       params,
@@ -248,26 +265,6 @@ local function get_lsp_completions()
   end
 end
 
-local function cancel_lsp_completions()
-  log.debug("Completions cancelled")
-  local client_id = getLspClient(LSP_NAME)
-  local client = vim.lsp.get_client_by_id(client_id)
-  if client then
-    for _, request in ipairs(client.requests) do
-      if client and client.requests then
-        for id, _ in pairs(client.requests) do
-          client.notify('$/cancelRequest', { id = id })
-        end
-      end
-    end
-  end
-  preview.ClearCompletion()
-end
-
-vim.api.nvim_create_autocmd("InsertLeave", {
-  pattern = "*",
-  callback = cancel_lsp_completions
-})
 
 function print_table_keys(t)
   log.debug("Printing keys")
@@ -276,6 +273,22 @@ function print_table_keys(t)
   end
 end
 
-vim.api.nvim_create_autocmd("InsertEnter", {
-  callback = get_lsp_completions,
-})
+local completion_list = {
+  "TextChangedI",
+  "InsertEnter"
+}
+for _, evnt in ipairs(completion_list) do
+  vim.api.nvim_create_autocmd(evnt, {
+    callback = get_lsp_completions,
+  })
+end
+
+local cancel_list = {
+  "InsertLeave",
+}
+for _, evnt in ipairs(cancel_list) do
+  vim.api.nvim_create_autocmd(evnt, {
+    pattern = "*",
+    callback = cancel_lsp_completions
+  })
+end
