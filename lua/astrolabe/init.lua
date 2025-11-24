@@ -56,9 +56,16 @@ end
 
 start_lsp()
 
+function add_completion_accept()
+  vim.keymap.set("i", "<C-t>", function() preview.AcceptCompletion() end)
+end
+
+add_completion_accept()
+
 local function attach_lsp(args)
   local id = getLspClient(LSP_NAME)
   log.debug("Attaching lsp")
+
   if id == nil then
     log.debug("No lsp running")
     return

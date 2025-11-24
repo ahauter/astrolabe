@@ -8,7 +8,7 @@ local log = require('plenary.log').new({
   use_file = true,
   outfile = log_path
 })
-local completion = "hello world"
+local completion = ""
 local line = 0
 local M = {}
 local extmark_table = {}
@@ -32,6 +32,7 @@ local function update_state()
   if #current_line >= #completion then
     log.info("Completion is too short!")
     clear_completion()
+    completion = ""
     return
   end
 
@@ -42,6 +43,7 @@ local function update_state()
     if completion_char ~= actual_char then
       log.info("Compleion does not match typed value")
       clear_completion()
+      completion = ""
       return
     end
   end
@@ -62,7 +64,17 @@ function M.SetCompletion(comp, l)
 end
 
 function M.AcceptCompletion()
+  log.debug("Accept Completion")
+  if not completion then
+    log.debug("No valild completion")
+    return
+  end
+  vim.api.nvim_buf_set_lines(
+    0, line, line, false, { completion }
+  )
 
+  clear_completion()
+  completion = ""
 end
 
 function M.ClearCompletion()
