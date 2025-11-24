@@ -26,7 +26,7 @@ local function update_state()
   local current_line = vim.api.nvim_buf_get_lines(
     0, line, line, false
   )
-  log.debugf("Current line: %s", current_line)
+  log.debug("Current line: ", current_line)
 
   if #current_line >= #completion then
     log.info("Completion is too short!")
