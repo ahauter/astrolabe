@@ -26,9 +26,11 @@ local function update_state()
   local current_line = vim.api.nvim_buf_get_lines(
     0, line, line, false
   )
-  log.debug(current_line)
+  log.debugf("Current line: %s", current_line)
 
   if #current_line >= #completion then
+    log.info("Completion is too short!")
+    clear_completion()
     return
   end
 
@@ -37,7 +39,9 @@ local function update_state()
     local actual_char = current_line:sub(pos, pos)
 
     if completion_char ~= actual_char then
+      log.info("Compleion does not match typed value")
       clear_completion()
+      return
     end
   end
   local remaining_line = completion:sub(#current_line + 1, -1)

@@ -236,6 +236,7 @@ local function get_lsp_completions()
   local client_id = getLspClient(LSP_NAME)
   local client = vim.lsp.get_client_by_id(client_id)
   local params = vim.lsp.util.make_position_params(0, client.offset_encoding or 'utf-16')
+
   if client then
     cancel_lsp_completions()
     client.request(
@@ -274,7 +275,7 @@ function print_table_keys(t)
 end
 
 local completion_list = {
-  "InsertEnter"
+  "TextChangedI"
 }
 for _, evnt in ipairs(completion_list) do
   vim.api.nvim_create_autocmd(evnt, {
