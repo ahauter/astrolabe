@@ -13,6 +13,15 @@ local line = 0
 local M = {}
 local extmark_table = {}
 
+local function clear_completion()
+  local ext_id = table.remove(extmark_table)
+  local current_bfnr = vim.api.nvim_buf_get_name(0)
+  while ext_id ~= nil do
+    vim.api.nvim_buf_del_extmark(, ns, ext_id)
+    ext_id = table.remove(extmark_table)
+  end
+end
+
 
 local function update_state()
   local current_line = vim.api.nvim_buf_get_lines(
@@ -29,7 +38,7 @@ local function update_state()
     local actual_char = current_line:sub(pos, pos)
 
     if completion_char ~= actual_char then
-      --maybe remove the completion..
+      clear_completion()
     end
   end
   local remaining_line = completion:sub(#current_line + 1, -1)
@@ -39,15 +48,6 @@ local function update_state()
       virt_text_pos = 'overlay'
     }
   ))
-end
-
-local function clear_completion()
-  local ext_id = table.remove(extmark_table)
-  local current_bfnr = vim.api.nvim_buf_get_name(0)
-  while ext_id ~= nil do
-    vim.api.nvim_buf_del_extmark(current_bfnr, ns, ext_id)
-    ext_id = table.remove(extmark_table)
-  end
 end
 
 function M.SetCompletion(comp, l)
