@@ -24,10 +24,11 @@ end
 
 local function update_state()
   local current_line = vim.api.nvim_buf_get_lines(
-    0, line, line, false
+    0, line, line + 1, false
   )
   log.debug("Current line: ", current_line)
 
+  current_line = current_line[1]
   if #current_line >= #completion then
     log.info("Completion is too short!")
     clear_completion()
@@ -58,6 +59,10 @@ function M.SetCompletion(comp, l)
   log.debug(l)
   line = l
   update_state()
+end
+
+function M.AcceptCompletion()
+
 end
 
 function M.ClearCompletion()
