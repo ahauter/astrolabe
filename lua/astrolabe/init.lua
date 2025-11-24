@@ -9,9 +9,9 @@ local log = require('plenary.log').new({
 })
 local commentWindow = require("astrolabe.comment_edit_window")
 local testWindow = require("astrolabe.test_edit_pane")
+local preview = require("astrolabe.completionPreview")
 local cur_buffer = nil
 local LSP_NAME = "Astrolabe"
-
 local function getLspClient(name)
   local clients = vim.lsp.get_active_clients() -- get clients for current buffer
   local client
@@ -198,7 +198,6 @@ end
 vim.keymap.set('v', '<leader>c', ":<C-u>call v:lua.CreateComment()<CR>")
 
 
---
 -- Fetches and prints language server protocol (LSP) completions at the current cursor position.
 --
 -- This function retrieves completion suggestions from the LSP server named "Astrolabe" and prints each suggestion's label.
@@ -216,17 +215,17 @@ vim.keymap.set('v', '<leader>c', ":<C-u>call v:lua.CreateComment()<CR>")
 -- - If the LSP client is not available, the function will not perform any actions.
 -- - If there are no completion items, it will print "No items".
 local function get_lsp_completions()
-  print("LM completions")
+  log.debug("LM completions")
   local client_id = getLspClient(LSP_NAME)
-  local params = vim.lsp.util.make_position_params() -- current cursor position
   local client = vim.lsp.get_client_by_id(client_id)
+  local params = vim.lsp.util.make_position_params(0, client.offset_encoding or 'utf-16')
   if client then
     client.request(
       "textDocument/completion",
       params,
       function(err, result, ctx, config)
         if err then
-          print("LSP completion error:", err)
+          log.debug("LSP completion error:", err)
           return
         end
 
@@ -234,16 +233,45 @@ local function get_lsp_completions()
         local items = result and result.items or result
 
         if not items then
-          print("No items")
+          log.debug("No items")
           return
         end
 
         -- Now you have the completion items as Lua tables
         for _, item in ipairs(items) do
-          print("Completion:", item.label)
+          log.debug("Completion:", item)
+          preview.SetCompletion(item.textEdit.newText, item.textEdit.startLine)
         end
       end
     )
+  end
+end
+
+local function cancel_lsp_completions()
+  log.debug("Completions cancelled")
+  local client_id = getLspClient(LSP_NAME)
+  local client = vim.lsp.get_client_by_id(client_id)
+  if client then
+    for _, request in ipairs(client.requests) do
+      if client and client.requests then
+        for id, _ in pairs(client.requests) do
+          client.notify('$/cancelRequest', { id = id })
+        end
+      end
+    end
+  end
+  preview.ClearCompletion()
+end
+
+vim.api.nvim_create_autocmd("InsertLeave", {
+  pattern = "*",
+  callback = cancel_lsp_completions
+})
+
+function print_table_keys(t)
+  log.debug("Printing keys")
+  for k, _ in pairs(t) do
+    log.debug(k)
   end
 end
 
