@@ -257,8 +257,8 @@ local function get_lsp_completions()
 
         -- Now you have the completion items as Lua tables
         for _, item in ipairs(items) do
-          log.debug("Completion:", item.textEdit.range.start)
           preview.SetCompletion(item.textEdit.newText, item.textEdit.range.start.line)
+          break
         end
       end
     )
@@ -274,7 +274,6 @@ function print_table_keys(t)
 end
 
 local completion_list = {
-  "TextChangedI",
   "InsertEnter"
 }
 for _, evnt in ipairs(completion_list) do
@@ -285,6 +284,7 @@ end
 
 local cancel_list = {
   "InsertLeave",
+  "CursorMoved"
 }
 for _, evnt in ipairs(cancel_list) do
   vim.api.nvim_create_autocmd(evnt, {

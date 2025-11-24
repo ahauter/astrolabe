@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/tliron/commonlog"
 	"github.com/tliron/glsp"
@@ -18,13 +19,19 @@ import (
 const lsName = "Astrolabe"
 
 var (
-	version string = "0.0.1"
-	handler protocol.Handler
+	log       commonlog.Logger
+	version   string = "0.0.1"
+	handler   protocol.Handler
+	workspace Workspace
 )
+var model *GenerativeModelAPI
 
-func MakeCommandHandler(model GenerativeModelAPI) protocol.WorkspaceExecuteCommandFunc {
-	log := commonlog.GetLogger("lsp.commandhandler")
-	log.SetMaxLevel(commonlog.Debug)
+func MakeCommandHandler() (protocol.WorkspaceExecuteCommandFunc, error) {
+	if model == nil {
+		return func(context *glsp.Context, params *protocol.ExecuteCommandParams) (any, error) {
+			return nil, nil
+		}, errors.New("Cannot make command handler without model instantiated")
+	}
 	return func(context *glsp.Context, params *protocol.ExecuteCommandParams) (any, error) {
 		log.Debug("Received Command")
 		command := params.Command
@@ -65,49 +72,104 @@ func MakeCommandHandler(model GenerativeModelAPI) protocol.WorkspaceExecuteComma
 			return "", nil
 		default:
 			return "", errors.New(fmt.Sprintf("Unrecognized command type %s", command))
+
 		}
-	}
+	}, nil
 }
 
-// MakeCommandHandler creates a CommandHandler for the given model.
-//
-// Parameters:
-// - model: The model to use for the command handler.
-//
-// Returns:
-// - A CommandHandler for the given model.
-//
-// Possible errors:
-// - An error if the model is nil.
 func main() {
 	// This increases logging verbosity (optional)
 	path := "/home/austin/astrologs/lsp.astro.log"
 	commonlog.Configure(1, &path)
-	log := commonlog.GetLogger("lsp.init")
-	model := GenerativeModelAPI{
+	log = commonlog.GetLogger("lsp.main")
+	log.SetMaxLevel(commonlog.Debug)
+	model = &GenerativeModelAPI{
 		endpoint: "http://127.0.0.1:8080/",
 		model:    "TheBloke/deepseek-coder-6.7B-instruct-GGUF",
 	}
-	CommandHandler := MakeCommandHandler(model)
+	CommandHandler, err := MakeCommandHandler()
+	if err != nil {
+		log.Criticalf("Error possibly from not instantiating your model, possibly not..")
+	}
 	handler = protocol.Handler{
 		Initialize:              initialize,
 		Initialized:             initialized,
 		Shutdown:                shutdown,
 		SetTrace:                setTrace,
 		WorkspaceExecuteCommand: CommandHandler,
+		TextDocumentCompletion:  textCompletion,
+		TextDocumentDidChange:   workspace.HandleChange,
+		TextDocumentDidSave:     fileSaveHandler,
 	}
 	server := server.NewServer(&handler, lsName, false)
 
-	server.RunStdio()
 	log.Info("Starting lsp server")
+	server.RunStdio()
 }
 
-// initialize provides the initialization parameters as
-// defined in the language server protocol spec: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#initialize
-// initializing the server initializes a connection with the client and creates the connection
-// with specified capabilities.
+func textCompletion(
+	context *glsp.Context,
+	params *protocol.CompletionParams,
+) (any, error) {
+	log.Debug(*&params.TextDocument.URI)
+	log.Debug("Completions")
+	log.Debugf("Line: %s", params.Position.Line)
+	log.Debugf("Col:  %s", params.Position.Character)
+	startTime := time.Now()
+	document, err := workspace.GetDocument(*&params.TextDocument.URI)
+	result := []protocol.CompletionItem{}
+	if err != nil {
+		log.Debug("Error finding document for completion, exiting early")
+		return result, nil
+	}
+	if model == nil {
+		log.Debug("Model not instantiated, exiting early")
+		return result, nil
+	}
+	txt, err := model.CodeCompletion(document.lines, int(params.Position.Line), log)
+	log.Debugf("Completion time: {%s}", time.Since(startTime))
+	if err != nil {
+		log.Warning("No completion generated")
+		log.Debug(err.Error())
+		return result, nil
+	}
+
+	kind := protocol.CompletionItemKindText
+	result = append(result, protocol.CompletionItem{
+		TextEdit: protocol.TextEdit{
+			NewText: txt,
+			Range: protocol.Range{
+				Start: protocol.Position{
+					Line:      params.Position.Line,
+					Character: params.Position.Character,
+				},
+				End: protocol.Position{
+					Line:      params.Position.Line,
+					Character: params.Position.Character,
+				},
+			},
+		},
+		Kind: &kind,
+	})
+	log.Debugf("%i", len(result))
+	list := protocol.CompletionList{
+		Items:        result,
+		IsIncomplete: true,
+	}
+	return list, nil
+}
+
 func initialize(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
 	capabilities := handler.CreateServerCapabilities()
+	w, err := MakeWorkspace(params.WorkspaceFolders)
+	if err != nil || w == nil {
+		return "", err
+	}
+	workspace = *w
+	log.Infof("Workspace size %i", workspace.Size())
+	capabilities.CompletionProvider = &protocol.CompletionOptions{
+		ResolveProvider: &protocol.True, // if you support resolve
+	}
 	return protocol.InitializeResult{
 		Capabilities: capabilities,
 		ServerInfo: &protocol.InitializeResultServerInfo{
@@ -118,15 +180,20 @@ func initialize(context *glsp.Context, params *protocol.InitializeParams) (any, 
 }
 
 func initialized(context *glsp.Context, params *protocol.InitializedParams) error {
-	log := commonlog.GetLogger("lsp.init")
-	log.Info("Initialized Server")
+	log.Info("Initialized Server :)")
 	return nil
 }
 
 func shutdown(context *glsp.Context) error {
-	log := commonlog.GetLogger("lsp.init")
-	protocol.SetTraceValue(protocol.TraceValueOff)
 	log.Info("Shutting down server")
+	protocol.SetTraceValue(protocol.TraceValueOff)
+	return nil
+}
+
+func fileSaveHandler(
+	context *glsp.Context,
+	params *protocol.DidSaveTextDocumentParams,
+) error {
 	return nil
 }
 
