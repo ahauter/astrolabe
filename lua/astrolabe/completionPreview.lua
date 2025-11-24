@@ -34,8 +34,7 @@ local function update_state()
   end
   local remaining_line = completion:sub(#current_line + 1, -1)
   table.insert(extmark_table, vim.api.nvim_buf_set_extmark(
-    vim.api.nvim_buf_get_name(0),
-    ns, line, #current_line, {
+    0, ns, line, #current_line, {
       virt_text = { { remaining_line, ghost_text } },
       virt_text_pos = 'overlay'
     }
