@@ -53,6 +53,7 @@ end
 
 function M.SetCompletion(comp, l)
   completion = comp
+  log.debug(l)
   line = l
   update_state()
 end

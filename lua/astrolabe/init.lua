@@ -12,6 +12,7 @@ local testWindow = require("astrolabe.test_edit_pane")
 local preview = require("astrolabe.completionPreview")
 local cur_buffer = nil
 local LSP_NAME = "Astrolabe"
+
 local function getLspClient(name)
   local clients = vim.lsp.get_active_clients() -- get clients for current buffer
   local client
@@ -239,8 +240,8 @@ local function get_lsp_completions()
 
         -- Now you have the completion items as Lua tables
         for _, item in ipairs(items) do
-          log.debug("Completion:", item)
-          preview.SetCompletion(item.textEdit.newText, item.textEdit.startLine)
+          log.debug("Completion:", item.textEdit.range.start)
+          preview.SetCompletion(item.textEdit.newText, item.textEdit.range.start.line)
         end
       end
     )
