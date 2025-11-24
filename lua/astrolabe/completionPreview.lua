@@ -15,9 +15,8 @@ local extmark_table = {}
 
 local function clear_completion()
   local ext_id = table.remove(extmark_table)
-  local current_bfnr = vim.api.nvim_buf_get_name(0)
   while ext_id ~= nil do
-    vim.api.nvim_buf_del_extmark(, ns, ext_id)
+    vim.api.nvim_buf_del_extmark(0, ns, ext_id)
     ext_id = table.remove(extmark_table)
   end
 end
