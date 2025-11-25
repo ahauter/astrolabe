@@ -209,12 +209,11 @@ local function cancel_lsp_completions()
   log.debug("Completions cancelled")
   local client_id = getLspClient(LSP_NAME)
   local client = vim.lsp.get_client_by_id(client_id)
-  if client then
-    for _, request in ipairs(client.requests) do
-      if client and client.requests then
-        for id, _ in pairs(client.requests) do
-          client.notify('$/cancelRequest', { id = id })
-        end
+  if client == nil then return end
+  for _, request in ipairs(client.requests) do
+    if client and client.requests then
+      for id, _ in pairs(client.requests) do
+        client.notify('$/cancelRequest', { id = id })
       end
     end
   end
@@ -241,36 +240,41 @@ end
 local function get_lsp_completions()
   log.debug("LM completions")
   local client_id = getLspClient(LSP_NAME)
+  if client_id == nil then
+    return
+  end
   local client = vim.lsp.get_client_by_id(client_id)
+  if client == nil then
+    log.debug("Client is not defined for completions, exiting")
+    return
+  end
   local params = vim.lsp.util.make_position_params(0, client.offset_encoding or 'utf-16')
 
-  if client then
-    cancel_lsp_completions()
-    client.request(
-      "textDocument/completion",
-      params,
-      function(err, result, ctx, config)
-        if err then
-          log.debug("LSP completion error:", err)
-          return
-        end
-
-        -- `result` can be an array or CompletionList
-        local items = result and result.items or result
-
-        if not items then
-          log.debug("No items")
-          return
-        end
-
-        -- Now you have the completion items as Lua tables
-        for _, item in ipairs(items) do
-          preview.SetCompletion(item.textEdit.newText, item.textEdit.range.start.line)
-          break
-        end
+  cancel_lsp_completions()
+  client.request(
+    "textDocument/completion",
+    params,
+    function(err, result, ctx, config)
+      if err then
+        log.debug("LSP completion error:", err)
+        return
       end
-    )
-  end
+
+      -- `result` can be an array or CompletionList
+      local items = result and result.items or result
+
+      if not items then
+        log.debug("No items")
+        return
+      end
+
+      -- Now you have the completion items as Lua tables
+      for _, item in ipairs(items) do
+        preview.SetCompletion(item.textEdit.newText, item.textEdit.range.start.line)
+        break
+      end
+    end
+  )
 end
 
 
