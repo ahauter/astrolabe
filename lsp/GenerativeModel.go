@@ -36,18 +36,7 @@ type CompletionRequest struct {
 	Prompt string `json:"prompt"`
 }
 
-// Function: completion
-// This function takes a prompt string and a Logger as parameters.
-// The prompt string is used to generate a completion request and send it to the model API.
-// The Logger is used to log debug messages and error messages.
-//
-// Parameters:
-// - prompt: This is the input string which is used to create a CompletionRequest.
-// - log: This is the logger used for debugging and error logging.
-//
-// Returns:
-// - A string that is the completion of the prompt
-/**
+/*
 Completes the given prompt using the Generative Model API.
 
 Parameters:
