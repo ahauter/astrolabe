@@ -84,8 +84,8 @@ func main() {
 	log = commonlog.GetLogger("lsp.main")
 	log.SetMaxLevel(commonlog.Debug)
 	model = &GenerativeModelAPI{
-		endpoint: "http://127.0.0.1:8080/",
-		model:    "TheBloke/deepseek-coder-6.7B-instruct-GGUF",
+		endpoint: "http://127.0.0.1:8000/",
+		model:    "loraModel",
 	}
 	CommandHandler, err := MakeCommandHandler()
 	if err != nil {
@@ -126,14 +126,16 @@ func textCompletion(
 		log.Debug("Model not instantiated, exiting early")
 		return result, nil
 	}
-	txt, err := model.CodeCompletion(document.lines, int(params.Position.Line), log)
+	txt, err := model.CodeCompletion(document.Lines(), int(params.Position.Line), int(params.Position.Character), log)
 	log.Debugf("Completion time: {%s}", time.Since(startTime))
+
 	if err != nil {
 		log.Warning("No completion generated")
 		log.Debug(err.Error())
+
 		return result, nil
 	}
-
+	log.Debugf("Text generated: %s", txt)
 	kind := protocol.CompletionItemKindText
 	result = append(result, protocol.CompletionItem{
 		TextEdit: protocol.TextEdit{
@@ -194,6 +196,11 @@ func fileSaveHandler(
 	context *glsp.Context,
 	params *protocol.DidSaveTextDocumentParams,
 ) error {
+	doc, err := workspace.GetDocument(params.TextDocument.URI)
+	if err != nil {
+		return err
+	}
+	doc.Read()
 	return nil
 }
 

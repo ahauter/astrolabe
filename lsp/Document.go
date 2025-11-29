@@ -141,6 +141,12 @@ type Document struct {
 	lines []string
 }
 
+func (d *Document) Lines() []string {
+	new_string := make([]string, len(d.lines))
+	copy(new_string, d.lines)
+	return new_string
+}
+
 func MakeDocument(uri string) (Document, error) {
 	content, err := readDocument(uri)
 	return Document{
@@ -180,29 +186,6 @@ func (d *Document) Pos(row int, col int) (string, error) {
 	return "", errors.New("Out of bounds error!!")
 }
 
-// EditRange edits a specified range within the document with the given text.
-//
-// Parameters:
-//
-//	startLine - The starting line number (0-indexed) of the range to edit.
-//	  Must be a non-negative integer.
-//	startCol - The starting column number (0-indexed) of the range to edit.
-//	  Must be a non-negative integer.
-//	endLine - The ending line number (0-indexed) of the range to edit.
-//	  Must be a non-negative integer and greater than or equal to startLine.
-//	endCol - The ending column number (0-indexed) of the range to edit.
-//	  Must be a non-negative integer and greater than or equal to startCol.
-//	text - The string text to insert into the document at the specified range.
-//
-// Returns:
-//
-//	An error if any of the provided parameters are out of bounds or if the
-//	operation fails. Returns nil if the edit is successful.
-//
-// Errors:
-//   - "Out of bounds!" - If startLine or startCol is negative, or if endLine
-//     or endCol is out of the valid range for the document.
-//   - Any other errors that may
 func (d *Document) editRange(
 	startLine int,
 	startCol int,
@@ -213,64 +196,35 @@ func (d *Document) editRange(
 	log.Debugf("start l,c %i,%i ", startLine, startCol)
 	log.Debugf("end l,c %i,%i ", endLine, endCol)
 	log.Debugf("Text: %s", text)
-	//split
-	new_lines := []string{}
-	first_nl := ""
-	last_nl := ""
-	if len(text) > 0 {
-		new_lines = strings.Split(text, "\n")
-		first_nl = new_lines[0]
-		last_nl = new_lines[len(new_lines)-1]
+	prefix := make([]string, len(d.lines[:startLine]))
+	copy(prefix, d.lines[:startLine])
+	var suffix []string
+	if len(d.lines) <= endLine+1 {
+		suffix = []string{}
+	} else {
+		suffix = make([]string, len(d.lines[endLine+1:]))
+		copy(suffix, d.lines[endLine+1:])
 	}
-	if startLine < 0 {
-		log.Error("Start line is negative!")
-		return errors.New("Out of bounds! ")
+	var text_prefix string
+	var text_suffix string
+	if startCol >= len(d.lines[startLine]) {
+		text_prefix = d.lines[startLine]
+	} else {
+		text_prefix = d.lines[startLine][:startCol]
 	}
-
-	if startCol < 0 {
-		log.Error("Start Col is negative!")
-		return errors.New("Out of bounds! ")
-	}
-	pre_lines := []string{}
-	if startLine < len(d.lines) {
-		pre_lines = d.lines[:startLine]
-		start_line_text := d.lines[startLine]
-		if startCol < len(start_line_text) {
-			prefix := start_line_text[startCol:]
-			if len(new_lines) == 0 {
-				last_nl = prefix + first_nl
-			} else {
-				new_lines[0] = prefix + first_nl
-			}
-		}
+	if endLine < len(d.lines) && endCol < len(d.lines[endLine]) {
+		text_suffix = d.lines[endLine][endCol:]
+	} else {
+		text_suffix = ""
 	}
 
-	log.Debug("Prefix computed")
-	suf_lines := []string{}
-	if endLine > 0 && endLine < len(d.lines) {
-		end_line := d.lines[endLine]
-		if endCol > 0 && endCol < len(end_line) {
-			end_suf := end_line[endCol:]
-			log.Debug("end ln suffix computed")
-			if len(new_lines) == 0 {
-				log.Debug("empty list")
-				new_lines = append(new_lines, last_nl+end_suf)
-			} else if len(new_lines) == 1 {
-				log.Debug("len 1 list")
-				new_lines[len(new_lines)-1] = new_lines[0] + end_suf
-			} else {
-				new_lines[len(new_lines)-1] = last_nl + end_suf
-				log.Debug("len n list")
-			}
-		}
-		log.Debug("Suffix computed")
+	if endCol == 0 && startLine != endLine {
+		text_suffix = "\n" + text_suffix
 	}
-
-	log.Debug("Insertion computed")
-	updated := append(pre_lines, append(new_lines, suf_lines...)...)
-	log.Debug("Update computed")
-
-	d.lines = updated
+	text = text_prefix + text + text_suffix
+	text_lines := strings.Split(text, "\n")
+	d.lines = append(prefix, append(text_lines, suffix...)...)
+	log.Debug("\n" + strings.Join(d.lines, "\n"))
 	return nil
 }
 

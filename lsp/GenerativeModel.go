@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/tliron/commonlog"
-	_ "github.com/tliron/commonlog/simple"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/tliron/commonlog"
+	_ "github.com/tliron/commonlog/simple"
 )
 
 type Message struct {
@@ -27,9 +28,13 @@ type GenerativeModelAPI struct {
 	model    string
 }
 
-type CompletionResponse struct {
+type CompletionItem struct {
 	Index   int    `json:"index"`
-	Content string `json:"content"`
+	Content string `json:"text"`
+}
+
+type CompletionResponse struct {
+	Choices []CompletionItem `json:"choices"`
 }
 
 type CompletionRequest struct {
@@ -54,26 +59,37 @@ Errors:
 */
 func (m *GenerativeModelAPI) completion(prompt string, log commonlog.Logger) (string, error) {
 	req := &CompletionRequest{Prompt: prompt}
-	log.Debug(req.Prompt)
+	//log.Debug(req.Prompt)
 	json_data, err := json.Marshal(req)
 	if err != nil {
 		log.Error("Error encoding prompt")
 		return "", err
 	}
-	log.Debug(string(json_data))
+	//log.Debug(string(json_data))
 	resp, err := http.Post(
-		m.endpoint+"completions",
-		"application/string",
+		m.endpoint+"v1/completions",
+		"application/json",
 		bytes.NewBuffer(json_data),
 	)
 	if err != nil {
+		log.Error(err.Error())
 		return "", err
 	}
 	defer resp.Body.Close()
-	bodybyte, err := io.ReadAll(resp.Body)
-	var resp_data CompletionResponse
-	json.Unmarshal(bodybyte, &resp_data)
-	return resp_data.Content, err
+	if resp.StatusCode == 200 {
+		bodybyte, err := io.ReadAll(resp.Body)
+		var resp_data CompletionResponse
+		json.Unmarshal(bodybyte, &resp_data)
+		if len(resp_data.Choices) > 0 {
+			return resp_data.Choices[0].Content, err
+		}
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Warningf("Got error reading body of response in error!\n%s", err.Error())
+	}
+	log.Errorf("Error in response: %s", string(body))
+	return "", err
 }
 
 func (GenerativeModelAPI) CreateTests(c string, file_type string) (string, error) {
@@ -105,6 +121,36 @@ func (m GenerativeModelAPI) CreateComment(file_type string, code string, log com
 	return FilterComments(resp), nil
 }
 
+const CURSOR_TOKEN = "<CURSOR>"
+
+func (m GenerativeModelAPI) CodeCompletion(code []string, line int, character int, log commonlog.Logger) (string, error) {
+	log.Debugf("Completions request at %s, %s", line, character)
+	//log.Debugf("Completions lines, %s", strings.Join(code, "\n"))
+	if line >= len(code) || line < 0 {
+		log.Warning("Line is outside document bounds!")
+		return "", nil
+	}
+	target_line := code[line]
+	log.Debugf("Target line: ", target_line)
+	full_prompt := []string{}
+	new_target := target_line + CURSOR_TOKEN
+	if character < len(target_line) && character >= 0 {
+		new_target = target_line[:character] + CURSOR_TOKEN + target_line[character:]
+	} else {
+		log.Warning("Character is outside line bounds!")
+	}
+	code[line] = new_target
+	full_prompt = append(full_prompt, code...)
+	full_prompt = append(full_prompt, "ENDOFFILE")
+	full_prompt = append(full_prompt, code[:line]...)
+	prompt := strings.Join(full_prompt, "\n")
+	resp, err := m.completion(prompt, log)
+	if err != nil {
+		return "", err
+	}
+	return resp, nil
+}
+
 func (GenerativeModelAPI) chat(c ChatHistory) {
 }
 
@@ -113,13 +159,16 @@ func (GenerativeModelAPI) embeddings(prompt string) {
 
 // RespToStr converts a CompletionResponse to a string.
 //
-// Parameters:
+// Parameters:{
 //   - resp: CompletionResponse to convert to a string.
 //
 // Returns:
 //   - string: The string representation of the CompletionResponse's Content field.
 func RespToStr(resp CompletionResponse) string {
-	return resp.Content
+	if 0 < len(resp.Choices) {
+		return resp.Choices[0].Content
+	}
+	return ""
 }
 
 // FilterComments function is used to remove non-comments from a given code string.
