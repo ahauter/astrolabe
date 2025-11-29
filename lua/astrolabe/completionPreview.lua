@@ -21,21 +21,25 @@ local function clear_completion()
   end
 end
 
+function trim(s)
+  s = tostring(s or "")
+  return s:match("^%s*(.-)%s*$")
+end
 
 local function update_state()
   local current_line = vim.api.nvim_buf_get_lines(
     0, line, line + 1, false
   )
+  current_line = trim(current_line[1])
   log.debug("Current line: ", current_line)
 
-  current_line = current_line[1]
+  completion = trim(completion)
   if #current_line >= #completion then
     log.info("Completion is too short!")
     clear_completion()
     completion = ""
     return
   end
-
   for pos = 1, #current_line do
     local completion_char = completion:sub(pos, pos)
     local actual_char = current_line:sub(pos, pos)

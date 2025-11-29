@@ -7,6 +7,7 @@ local log = require('plenary.log').new({
   use_file = true,
   outfile = log_path
 })
+
 local commentWindow = require("astrolabe.comment_edit_window")
 local testWindow = require("astrolabe.test_edit_pane")
 local preview = require("astrolabe.completionPreview")

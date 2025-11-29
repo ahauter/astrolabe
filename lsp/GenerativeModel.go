@@ -148,7 +148,16 @@ func (m GenerativeModelAPI) CodeCompletion(code []string, line int, character in
 	if err != nil {
 		return "", err
 	}
-	return resp, nil
+	// only return first line
+	lines := strings.Split(resp, "\n")
+	result := ""
+	for _, line := range lines {
+		if len(strings.TrimSpace(line)) != 0 {
+			result = line
+			break
+		}
+	}
+	return result, nil
 }
 
 func (GenerativeModelAPI) chat(c ChatHistory) {
