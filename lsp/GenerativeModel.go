@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -39,6 +40,7 @@ type CompletionResponse struct {
 
 type CompletionRequest struct {
 	Prompt string `json:"prompt"`
+	Stream bool   `json:"stream"`
 }
 
 /*
@@ -58,7 +60,7 @@ Errors:
 - Returns an error if there was an issue unmarshaling the response from JSON.
 */
 func (m *GenerativeModelAPI) completion(prompt string, log commonlog.Logger) (string, error) {
-	req := &CompletionRequest{Prompt: prompt}
+	req := &CompletionRequest{Prompt: prompt, Stream: false}
 	//log.Debug(req.Prompt)
 	json_data, err := json.Marshal(req)
 	if err != nil {
@@ -83,6 +85,72 @@ func (m *GenerativeModelAPI) completion(prompt string, log commonlog.Logger) (st
 		if len(resp_data.Choices) > 0 {
 			return resp_data.Choices[0].Content, err
 		}
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Warningf("Got error reading body of response in error!\n%s", err.Error())
+	}
+	log.Errorf("Error in response: %s", string(body))
+	return "", err
+}
+
+func (m *GenerativeModelAPI) stream(prompt string, log commonlog.Logger) (string, error) {
+	req := &CompletionRequest{Prompt: prompt, Stream: true}
+	json_data, err := json.Marshal(req)
+	if err != nil {
+		log.Error("Error encoding prompt")
+		return "", err
+	}
+	resp, err := http.Post(
+		m.endpoint+"v1/completions",
+		"application/json",
+		bytes.NewBuffer(json_data),
+	)
+	if err != nil {
+		log.Error(err.Error())
+		return "", err
+	}
+	data_prefix := []byte{'d', 'a', 't', 'a', ':'}
+	done_token := []byte{'[', 'D', 'O', 'N', 'E', ']'}
+	defer resp.Body.Close()
+	if resp.StatusCode == 200 {
+		body := bufio.NewReader(resp.Body)
+		result := ""
+		for {
+			line, err := body.ReadBytes('\n')
+			if err != nil {
+				return "", err
+			}
+			log.Debug(string(line))
+			if bytes.HasPrefix(line, done_token) {
+				break
+			}
+
+			if bytes.HasPrefix(line, data_prefix) {
+				line = line[len(data_prefix):]
+				var resp_data CompletionResponse
+				err = json.Unmarshal(line, &resp_data)
+				if err != nil {
+					log.Debug(err.Error())
+				}
+				if len(resp_data.Choices) == 0 {
+					log.Debug("No choices!")
+					continue
+				}
+				line_str := resp_data.Choices[0].Content
+				if line_str != "\n" {
+					result = result + line_str
+				}
+				result = strings.Replace(result, CURSOR_TOKEN, "", -1)
+
+				result = strings.Replace(result, ENDOFFILE_TOKEN, "", -1)
+
+				if line_str == "\n" && len(result) > 0 {
+					break
+				}
+			}
+		}
+		return result, nil
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -122,6 +190,7 @@ func (m GenerativeModelAPI) CreateComment(file_type string, code string, log com
 }
 
 const CURSOR_TOKEN = "<CURSOR>"
+const ENDOFFILE_TOKEN = "ENDOFFILE"
 
 func (m GenerativeModelAPI) CodeCompletion(code []string, line int, character int, log commonlog.Logger) (string, error) {
 	log.Debugf("Completions request at %s, %s", line, character)
@@ -141,23 +210,10 @@ func (m GenerativeModelAPI) CodeCompletion(code []string, line int, character in
 	}
 	code[line] = new_target
 	full_prompt = append(full_prompt, code...)
-	full_prompt = append(full_prompt, "ENDOFFILE")
+	full_prompt = append(full_prompt, ENDOFFILE_TOKEN)
 	full_prompt = append(full_prompt, code[:line]...)
 	prompt := strings.Join(full_prompt, "\n")
-	resp, err := m.completion(prompt, log)
-	if err != nil {
-		return "", err
-	}
-	// only return first line
-	lines := strings.Split(resp, "\n")
-	result := ""
-	for _, line := range lines {
-		if len(strings.TrimSpace(line)) != 0 {
-			result = line
-			break
-		}
-	}
-	return result, nil
+	return m.stream(prompt, log)
 }
 
 func (GenerativeModelAPI) chat(c ChatHistory) {

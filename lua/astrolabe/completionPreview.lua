@@ -30,27 +30,11 @@ local function update_state()
   local current_line = vim.api.nvim_buf_get_lines(
     0, line, line + 1, false
   )
-  current_line = trim(current_line[1])
+  current_line = current_line[1]
+  -- if current line is all tabs, indent completion accordingly
+  completion = current_line .. trim(completion)
   log.debug("Current line: ", current_line)
 
-  completion = trim(completion)
-  if #current_line >= #completion then
-    log.info("Completion is too short!")
-    clear_completion()
-    completion = ""
-    return
-  end
-  for pos = 1, #current_line do
-    local completion_char = completion:sub(pos, pos)
-    local actual_char = current_line:sub(pos, pos)
-
-    if completion_char ~= actual_char then
-      log.info("Compleion does not match typed value")
-      clear_completion()
-      completion = ""
-      return
-    end
-  end
   local remaining_line = completion:sub(#current_line + 1, -1)
   table.insert(extmark_table, vim.api.nvim_buf_set_extmark(
     0, ns, line, #current_line, {
